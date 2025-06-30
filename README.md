@@ -34,11 +34,11 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 ------------
     1. MODO GRÁFICO (GUI):
        Execute o script sem argumentos:
-         python3 GeradorTopologias.py        # Linux/macOS
-         py GeradorTopologias.py             # Windows
+         python GeradorTopologias.py        # Linux
+         python GeradorTopologias.py        # Windows
 
     2. MODO TERMINAL (CLI):
-       python3 GeradorTopologias.py [OPÇÕES] ARQUIVO_CONEXÕES_1.csv ARQUIVO_CONEXÕES_2.csv ...
+       python GeradorTopologias.py [OPÇÕES] ARQUIVO_CONEXÕES_1.csv ARQUIVO_CONEXÕES_2.csv ...
 
 🛠️ ARGUMENTOS DA CLI:
 --------------------
@@ -152,13 +152,13 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 --------------------
 
     1. GERAÇÃO SIMPLES (Linux):
-       python3 GeradorTopologias.py -t cog -r redes.csv
+       python GeradorTopologias.py -t cog -r redes.csv
 
     2. WINDOWS COM OPÇÕES AVANÇADAS:
-       py GeradorTopologias.py -y -t gh -e "C:\\\\dados\\\\equipamentos.csv" rede_principal.csv
+       python GeradorTopologias.py -y -t gh -e "C:\\\\dados\\\\equipamentos.csv" rede_principal.csv
 
     3. ATIVANDO LOGS E REGIONALIZAÇÃO:
-       python3 GeradorTopologias.py -l -r -t co campus_sp.csv
+       python GeradorTopologias.py -l -r -t co campus_sp.csv
 
 🛠️ DICAS TÉCNICAS:
 ------------------
