@@ -113,12 +113,31 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
          - fillColor: Cor de preenchimento (sobrescreve LAYER_COLORS)
        • Ex: "width": 100
 
-    3. PAGE_DEFINITIONS:
+    3. LAYER_DEFAULT_BY_PREFIX
+	• Define a camada do elemento baseado em seu nome
+ 	• Ex: "RTIC": {"camada": "INNER-CORE", "nivel": 1},
+
+    4. CONNECTION_STYLES
+	• Define as caracteristicas das cores e formato das conexões por camada
+ 	• Ex: "INNER-CORE": {"color": "#036897", "strokeWidth": "2"},
+
+    5. CONNECTION_STYLE_BASE
+	• Define as caracteristicas de estilo das conexões
+  
+    6. PAGE_DEFINITIONS:
        • Cria múltiplas páginas/visões no diagrama
        • "visible_layers": null → mostra todas as camadas
        • Ex: {{"name": "VISÃO NORTE", "visible_layers": ["CORE_NORTE"]}}
 
+    7. NODE_STYLE
+	• Define as caraacteristicas de formato dos nós (roteadores, switchs, etc)
+
+    8. LEGEND_CONFIG
+	• Define as caracteristicas da legenda de todas as camadas
+
 4. CONFIGURAÇÕES DE LAYOUT (Personalize cada algoritmo):
+   • locked: 0=editável, 1=bloqueado (diagramas finais)
+   • node_scale_factor: Escala global dos nós (ex: 0.5 = metade)
 
     a) CIRCULAR_LAYOUT:
        • center_x/y: Coordenadas do centro
@@ -133,7 +152,7 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 
     c) GEOGRAPHIC_LAYOUT:
        • background_image: Imagem de fundo (mapa)
-         - url: Caminho local/URL (ex: "brasil-map.png")
+         - url: Caminho local/URL (ex: "brasil-map.png"), atentar que o algoritimo de repulsão vai terntar evitar sobreposição.
          - opacity: Transparência (0-100)
        • min_distance: Espaçamento entre nós
        • Ex: "opacity": 40
@@ -142,10 +161,6 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
        • vertical_spacing: Espaço entre níveis
        • horizontal_spacing: Espaço entre nós
        • Ex: "vertical_spacing": 200
-
-5. PROPRIEDADES ESPECIAIS:
-   • locked: 0=editável, 1=bloqueado (diagramas finais)
-   • node_scale_factor: Escala global dos nós (ex: 0.5 = metade)
 
 🔍 EXEMPLOS PRÁTICOS:
 --------------------
@@ -201,3 +216,4 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 Atualizações em https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
 
 ## MIT License
+https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE
