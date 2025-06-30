@@ -59,21 +59,29 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 
 📦 INSTALAÇÃO DE DEPENDÊNCIAS:
 ----------------------------
-    # Linux/macOS:
-    pip install networkx chardet
 
-    # Windows (CMD/PowerShell):
-    python -m pip install networkx chardet
+    # Windows
+    1. Instalar Python 3 (Microsof Store):
+        a. abra Microsoft Store no menu iniciar.
+        b. pesquise "Python 3", escolher versão superior
+        c. selecionar instalar.
+    2. Instalar dependências Python (CMD/PowerShell):
+		python -m pip install networkx chardet numpy
+
+	# Linux Debian:
+    1. Instalar Python 3 e pip (apt)
+		apt update & apt install python3 pip python3-tk
+    2. Instalar dependências Python
+		python3 -m pip install networkx chardet numpy
 
 🚀 COMO USAR:
 ------------
     1. MODO GRÁFICO (GUI):
        Execute o script sem argumentos:
-         python3 GeradorTopologias.py        # Linux/macOS
-         py GeradorTopologias.py             # Windows
+         python GeradorTopologias.py        # Linux/Windows (python ou python3, de acordo com a instalação)
 
     2. MODO TERMINAL (CLI):
-       python3 GeradorTopologias.py [OPÇÕES] ARQUIVO_CONEXÕES_1.csv ARQUIVO_CONEXÕES_2.csv ...
+       python GeradorTopologias.py [OPÇÕES] ARQUIVO_CONEXÕES_1.csv ARQUIVO_CONEXÕES_2.csv ...
 
 🛠️ ARGUMENTOS DA CLI:
 --------------------
@@ -149,12 +157,31 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
          - fillColor: Cor de preenchimento (sobrescreve LAYER_COLORS)
        • Ex: "width": 100
 
-    3. PAGE_DEFINITIONS:
+    3. LAYER_DEFAULT_BY_PREFIX
+	• Define a camada do elemento baseado em seu nome
+ 	• Ex: "RTIC": {"camada": "INNER-CORE", "nivel": 1},
+
+    4. CONNECTION_STYLES
+	• Define as caracteristicas das cores e formato das conexões por camada
+ 	• Ex: "INNER-CORE": {"color": "#036897", "strokeWidth": "2"},
+
+    5. CONNECTION_STYLE_BASE
+	• Define as caracteristicas de estilo das conexões
+  
+    6. PAGE_DEFINITIONS:
        • Cria múltiplas páginas/visões no diagrama
        • "visible_layers": null → mostra todas as camadas
        • Ex: {{"name": "VISÃO NORTE", "visible_layers": ["CORE_NORTE"]}}
 
+    7. NODE_STYLE
+	• Define as caraacteristicas de formato dos nós (roteadores, switchs, etc)
+
+    8. LEGEND_CONFIG
+	• Define as caracteristicas da legenda de todas as camadas
+
 4. CONFIGURAÇÕES DE LAYOUT (Personalize cada algoritmo):
+   • locked: 0=editável, 1=bloqueado (diagramas finais)
+   • node_scale_factor: Escala global dos nós (ex: 0.5 = metade)
 
     a) CIRCULAR_LAYOUT:
        • center_x/y: Coordenadas do centro
@@ -169,7 +196,7 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 
     c) GEOGRAPHIC_LAYOUT:
        • background_image: Imagem de fundo (mapa)
-         - url: Caminho local/URL (ex: "brasil-map.png")
+         - url: Caminho local/URL (ex: "brasil-map.png"), atentar que o algoritimo de repulsão vai terntar evitar sobreposição.
          - opacity: Transparência (0-100)
        • min_distance: Espaçamento entre nós
        • Ex: "opacity": 40
@@ -179,21 +206,17 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
        • horizontal_spacing: Espaço entre nós
        • Ex: "vertical_spacing": 200
 
-5. PROPRIEDADES ESPECIAIS:
-   • locked: 0=editável, 1=bloqueado (diagramas finais)
-   • node_scale_factor: Escala global dos nós (ex: 0.5 = metade)
-
 🔍 EXEMPLOS PRÁTICOS:
 --------------------
 
     1. GERAÇÃO SIMPLES (Linux):
-       python3 GeradorTopologias.py -t cog -r redes.csv
+       python GeradorTopologias.py -t cog -r redes.csv
 
     2. WINDOWS COM OPÇÕES AVANÇADAS:
-       py GeradorTopologias.py -y -t gh -e "C:\\\\dados\\\\equipamentos.csv" rede_principal.csv
+       python GeradorTopologias.py -y -t gh -e "C:\\\\dados\\\\equipamentos.csv" rede_principal.csv
 
     3. ATIVANDO LOGS E REGIONALIZAÇÃO:
-       python3 GeradorTopologias.py -l -r -t co campus_sp.csv
+       python GeradorTopologias.py -l -r -t co campus_sp.csv
 
 🛠️ DICAS TÉCNICAS:
 ------------------
@@ -234,7 +257,10 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 
     ⏱️ DICA FINAL: Visualize os arquivos em https://app.diagrams.net/
 
-https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
+Atualizações em https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
+
+## MIT License
+https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE
 
 """.format(versionctr=versionctr)
 
