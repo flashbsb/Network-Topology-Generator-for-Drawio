@@ -199,4 +199,12 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 
     ⏱️ DICA FINAL: Visualize os arquivos em https://app.diagrams.net/
 
-https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
+Atualizações em https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
+
+## Licença
+
+	Este projeto é disponibilizado sob uma Licença de Uso Livre com Atribuição e Autorização Comercial.
+	
+	Você pode utilizar, modificar e distribuir este código para fins não comerciais desde que mantenha os créditos.  
+	Para qualquer uso comercial, é necessária autorização prévia do autor.  
+	Veja o arquivo LICENSE.txt para mais detalhes.
