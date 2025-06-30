@@ -216,4 +216,4 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 Atualizações em https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
 
 ## MIT License
-https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE
+[https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE](https://raw.githubusercontent.com/flashbsb/Network-Topology-Generator-for-Drawio/refs/heads/main/LICENSE)
