@@ -1,4 +1,4 @@
-GERADOR DE TOPOLOGIAS DE REDE {versionctr}
+GERADOR DE TOPOLOGIAS DE REDE
 ====================================
 
 VISÃO GERAL:
@@ -15,11 +15,20 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 
 📦 INSTALAÇÃO DE DEPENDÊNCIAS:
 ----------------------------
-    # Linux/macOS:
-    pip install networkx chardet
 
-    # Windows (CMD/PowerShell):
-    python -m pip install networkx chardet
+    # Windows
+    1. Instalar Python 3 (Microsof Store):
+        a. abra Microsoft Store no menu iniciar.
+        b. pesquise "Python 3", escolher versão superior
+        c. selecionar instalar.
+    2. Instalar dependências Python (CMD/PowerShell):
+		python -m pip install networkx chardet
+
+	# Linux Debian:
+    1. Instalar Python 3 e pip (apt)
+		apt update & apt install python3
+    2. Instalar dependências Python
+		python -m pip install networkx chardet numpy
 
 🚀 COMO USAR:
 ------------
