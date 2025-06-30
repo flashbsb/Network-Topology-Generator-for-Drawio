@@ -179,7 +179,7 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
     8. LEGEND_CONFIG
 	• Define as caracteristicas da legenda de todas as camadas
 
-4. CONFIGURAÇÕES DE LAYOUT (Personalize cada algoritmo):
+9. CONFIGURAÇÕES DE LAYOUT (Personalize cada algoritmo):
    • locked: 0=editável, 1=bloqueado (diagramas finais)
    • node_scale_factor: Escala global dos nós (ex: 0.5 = metade)
 
