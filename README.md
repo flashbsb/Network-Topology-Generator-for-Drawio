@@ -115,11 +115,11 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 
     3. LAYER_DEFAULT_BY_PREFIX
 	• Define a camada do elemento baseado em seu nome
- 	• Ex: "RTIC": {"camada": "INNER-CORE", "nivel": 1},
+ 	• Ex: "RTIC": "camada": "INNER-CORE", "nivel": 1
 
     4. CONNECTION_STYLES
 	• Define as caracteristicas das cores e formato das conexões por camada
- 	• Ex: "INNER-CORE": {"color": "#036897", "strokeWidth": "2"},
+ 	• Ex: "INNER-CORE": "color": "#036897", "strokeWidth": "2"
 
     5. CONNECTION_STYLE_BASE
 	• Define as caracteristicas de estilo das conexões
@@ -216,4 +216,4 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 Atualizações em https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
 
 ## MIT License
-[https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE](https://raw.githubusercontent.com/flashbsb/Network-Topology-Generator-for-Drawio/refs/heads/main/LICENSE)
+https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE
