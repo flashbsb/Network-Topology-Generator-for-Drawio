@@ -261,7 +261,6 @@ Atualizações em https://github.com/flashbsb/Network-Topology-Generator-for-Dra
 
 ## MIT License
 https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE
-
 """.format(versionctr=versionctr)
 
 # Configuração de logging será feita no main() com timestamp
