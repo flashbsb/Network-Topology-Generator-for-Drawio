@@ -22,20 +22,19 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
         b. pesquise "Python 3", escolher versão superior
         c. selecionar instalar.
     2. Instalar dependências Python (CMD/PowerShell):
-		python -m pip install networkx chardet
+		python -m pip install networkx chardet numpy
 
 	# Linux Debian:
     1. Instalar Python 3 e pip (apt)
-		apt update & apt install python3
+		apt update & apt install python3 pip python3-tk
     2. Instalar dependências Python
-		python -m pip install networkx chardet numpy
+		python3 -m pip install networkx chardet numpy
 
 🚀 COMO USAR:
 ------------
     1. MODO GRÁFICO (GUI):
        Execute o script sem argumentos:
-         python GeradorTopologias.py        # Linux
-         python GeradorTopologias.py        # Windows
+         python GeradorTopologias.py        # Linux/Windows (python ou python3, de acordo com a instalação)
 
     2. MODO TERMINAL (CLI):
        python GeradorTopologias.py [OPÇÕES] ARQUIVO_CONEXÕES_1.csv ARQUIVO_CONEXÕES_2.csv ...
