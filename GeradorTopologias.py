@@ -47,18 +47,19 @@ GERADOR DE TOPOLOGIAS DE REDE {versionctr}
 
 VISÃO GERAL:
 -----------
-Ferramenta para geração automática de diagramas de rede (.drawio) a partir de:
+Ferramenta para geração automática de diagramas de rede (.drawio) a partir da massa de dados:
 - Equipamentos (elementos.csv)
 - Conexões (conexoes.csv)
 - Localizações geográficas (localidades.csv)
 
 ⭐ RECURSOS PRINCIPAIS:
 • 4 algoritmos de layout: Circular (c), Orgânico (o), Geográfico (g), Hierárquico (h)
-• Múltiplas páginas/visões no mesmo diagrama
-• Cores e formas personalizadas por camada
+• Para gerar as topologias (c, o e h) é necessário somente o arquivo conexoes.csv com origem e destino
+• Cores e formas personalizadas por camada para determinar as customizações dos nós e conexões
+• Múltiplas páginas/visões das camadadas no mesmo diagrama
 • Regionalização automática (ex: CORE -> CORE_SUDESTE)
-• Suporte a mapas de fundo (background images)
 • Interface gráfica (GUI) e linha de comando (CLI)
+• Suporte a mapas de fundo (background images)
 
 🚀 COMO USAR:
 ------------
@@ -74,7 +75,7 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
   -y          Incluir nós sem conexões (órfãos)
   -v          Modo detalhado (logs na tela)
   -l          Gerar logs em arquivo
-  -t LAYOUTS  Layouts a gerar (c=circular, o=orgânico, g=geográfico, h=hierárquico)
+  -t LAYOUTS  Caso queira especificar o layouts a ser gerado (c=circular, o=orgânico, g=geográfico, h=hierárquico)
               Ex: -t cog → gera circular + orgânico + geográfico
   -r          Ativar regionalização das camadas
   -g CAMINHO  Diretório customizado para arquivos de entrada
@@ -158,11 +159,11 @@ Controle completo da aparência e comportamento das topologias:
    • Ex: "position": {{"x": 50, "y": 30}}
 
 🔍 FORMAS DISPONÍVEIS (mxgraph):
-• Roteadores: mxgraph.cisco.routers.router
-• Switches: mxgraph.cisco19.rect (prIcon: l2_switch)
-• Servidores: mxgraph.office.machines.server
-• Firewalls: mxgraph.cisco.security.firewall
-• DWDM: mxgraph.cisco.misc.dwdm_filter
+    • Roteadores: mxgraph.cisco.routers.router
+    • Switches: mxgraph.cisco19.rect (prIcon: l2_switch)
+    • Servidores: mxgraph.office.machines.server
+    • Firewalls: mxgraph.cisco.security.firewall
+    • DWDM: mxgraph.cisco.misc.dwdm_filter
 
 🛠️ EXEMPLOS PRÁTICOS:
 --------------------
