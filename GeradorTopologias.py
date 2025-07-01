@@ -192,11 +192,12 @@ Solução: Ajuste parâmetros no config.json:
 
 📤 SAÍDA GERADA:
 ----------------
-Padrão de nomes: NomeArquivo_TIMESTAMP_layout.drawio
-Exemplo: rede_sp_20250615143045_geografico.drawio
+    Padrão de nomes: NomeArquivo_TIMESTAMP_layout.drawio
+    Exemplo: rede_sp_20250615143045_geografico.drawio
 
 📌 Como gerar os arquivos de testes para carga do script
-Use o Gerador de Topologias para Backbone Nacional   https://github.com/flashbsb/Backbone-Network-Topology-Generator para criar os arquivos conexoes.csv, elementos.csv e localidades.csv (aplicativo irá gerar a massa de dados de teste).
+Use o Gerador de Topologias para Backbone Nacional, disponível em:
+    https://github.com/flashbsb/Backbone-Network-Topology-Generator
 
 🌎 REPOSITÓRIO OFICIAL: 
     https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
