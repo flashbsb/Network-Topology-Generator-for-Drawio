@@ -25,7 +25,7 @@ from collections import defaultdict
 import platform
 import glob
 
-versionctr = "vA1.19"
+versionctr = "vA1.20"
 
 # Tente importar psutil para monitoramento de memória, mas não é obrigatório
 PSUTIL_AVAILABLE = False
