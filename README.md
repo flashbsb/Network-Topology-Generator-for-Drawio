@@ -198,7 +198,8 @@ graph LR
     I --> J[Diagrama Draw.io]
 ```
 
----
-[Licença MIT](https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE) |
-[Repositório](https://github.com/flashbsb/Network-Topology-Generator-for-Drawio)
-```
+🔗 **Repositório Oficial**:  
+https://github.com/flashbsb/Backbone-Network-Topology-Generator
+
+📜 **Licença**:  
+[MIT License](https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE)
