@@ -56,6 +56,15 @@ python GeradorTopologias.py [OPÇÕES] conexoes1.csv conexoes2.csv ...
 | `-o nc` | Opções: n (sem nomes), c (ocultar conexões) |
 | `-d`  | Ignorar customizações nos CSV |
 
+## ⚙️ Configuração Avançada (config.json)
+
+### Principais Seções
+1. **LAYER_COLORS**: Cores padrão por camada
+2. **LAYER_STYLES**: Aparência dos equipamentos
+3. **LAYER_DEFAULT_BY_PREFIX**: Mapeamento nome→camada
+4. **PAGE_DEFINITIONS**: Visões/páginas do diagrama
+5. **GEOGRAPHIC_LAYOUT**: Configuração de mapa
+
 ## 📂 Arquivos de Entrada
 
 ### 1. conexoes.csv (Obrigatório)
@@ -77,36 +86,6 @@ SP01;SAOPAULO;Sudeste;23.32.33.S;46.38.44.W
 ```
 
 > **Nota**: Coordenadas no formato **DMS** (Graus.Minutos.Segundos.Direção)
-
-## ⚙️ Configuração Avançada (config.json)
-
-### Estrutura Principal
-```json
-{
-  "LAYER_COLORS": {
-    "INNER-CORE": "#036897",
-    "OUTER-CORE": "#0385BE"
-  },
-  "LAYER_STYLES": {
-    "INNER-CORE": {
-      "shape": "mxgraph.cisco19.rect",
-      "width": 50,
-      "height": 50
-    }
-  },
-  "LAYER_DEFAULT_BY_PREFIX": {
-    "RTIC": {"camada": "INNER-CORE", "nivel": 1},
-    "RTOC": {"camada": "OUTER-CORE", "nivel": 2}
-  }
-}
-```
-
-### Principais Seções
-1. **LAYER_COLORS**: Cores padrão por camada
-2. **LAYER_STYLES**: Aparência dos equipamentos
-3. **LAYER_DEFAULT_BY_PREFIX**: Mapeamento nome→camada
-4. **PAGE_DEFINITIONS**: Visões/páginas do diagrama
-5. **GEOGRAPHIC_LAYOUT**: Configuração de mapa
 
 ## 🛠️ Exemplos Práticos
 
