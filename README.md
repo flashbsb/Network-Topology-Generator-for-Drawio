@@ -337,7 +337,7 @@ graph LR
 ## Interface Gráfica (GUI)
 
 ![Screenshot da Interface Gráfica](docs/images/gui-screenshot.png)
-> *Captura da interface principal mostrando seleção de arquivos e opções de layout*
+> *Captura da interface Gráfica principal mostrando layout*
 
 ## MIT License
 https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE
