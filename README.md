@@ -17,7 +17,7 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 - **Regionalização automática**: Ex: `CORE` → `CORE_SUDESTE`
 - **Duas interfaces**: CLI (linha de comando) e GUI (gráfica)
 
-## ⚙️ Instalação Rápida
+## ⚙️ Instalação Rápida das dependências para execução do script
 
 ```bash
 # Windows (via Microsoft Store)
