@@ -13,6 +13,130 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
     - Suporte a mapas reais (background images)
     - Interface gráfica (GUI) e linha de comando (CLI)
 
+## Fluxo do Programa
+
+```mermaid
+graph TD
+    A[Início] --> B{Modo de Execução}
+    B -->|CLI| C[Processar Argumentos]
+    B -->|GUI| D[Iniciar Interface Gráfica]
+    
+    C --> E[Validar Argumentos]
+    E --> F[Configurar Logging]
+    F --> G[Carregar Configuração]
+    G --> H[Buscar Arquivos de Entrada]
+    
+    D --> I[Carregar Configuração]
+    I --> J[Exibir Interface]
+    J --> K[Selecionar Arquivos e Opções]
+    K --> L[Gerar Topologias]
+    
+    H --> M{Arquivos Encontrados?}
+    M -->|Sim| N[Processar Arquivos]
+    M -->|Não| O[Iniciar GUI]
+    
+    N --> P[Loop por Arquivo de Conexões]
+    P --> Q[Instanciar Gerador]
+    Q --> R[Ler Elementos]
+    R --> S[Ler Conexões]
+    S --> T[Aplicar Regionalização]
+    T --> U[Validar Dados]
+    U --> V[Calcular Layouts]
+    V --> W[Gerar Diagrama Draw.io]
+    W --> X[Salvar Arquivo]
+    
+    L --> Y[Loop por Arquivo de Conexões]
+    Y --> Z[Processar Arquivo]
+    Z --> W
+    
+    X --> AA[Relatório Final]
+    AA --> AB[Fim]
+```
+```mermaid
+graph LR
+    A[config.json] --> B[Definições de Estilo]
+    C[elementos.csv] --> D[Camadas/Níveis]
+    E[localidades.csv] --> F[Regionalização]
+    G[conexoes.csv] --> H[Relações]
+    B & D & F & H --> I[Gerador]
+    I --> J[Diagrama Draw.io]
+```
+### Passo a Passo Explicado:
+
+1. **Início**  
+   - Script é iniciado via linha de comando ou execução direta
+
+2. **Modo de Execução**  
+   - **CLI**: Ativado com argumentos na linha de comando
+   - **GUI**: Ativado sem argumentos
+
+3. **Processamento CLI**  
+   - Valida argumentos (`-t`, `-r`, `-y`, etc.)
+   - Configura sistema de logs (arquivo/tela)
+   - Carrega `config.json`
+   - Busca arquivos CSV no diretório especificado
+
+4. **Interface Gráfica (GUI)**  
+   - Carrega configuração padrão
+   - Exibe janela interativa
+   - Permite seleção de arquivos e opções visuais
+
+5. **Busca de Arquivos**  
+   - Verifica existência de:
+     - `conexoes*.csv` (obrigatório)
+     - `elementos.csv` (opcional)
+     - `localidades.csv` (opcional)
+   - Se não encontrar arquivos, volta para GUI
+
+6. **Processamento Principal (por arquivo)**  
+   a. **Instanciar Gerador**  
+      - Inicializa estruturas de dados
+      - Carrega mapeamento de localidades  
+   
+   b. **Ler Elementos**  
+      - Processa `elementos.csv`
+      - Determina camadas/níveis
+      - Aplica cores personalizadas
+   
+   c. **Ler Conexões**  
+      - Processa `conexoes.csv`
+      - Cria relações entre equipamentos
+      - Gera camadas de conexão
+   
+   d. **Aplicar Regionalização**  
+      - Adiciona sufixos regionais às camadas (ex: `CORE_SUDESTE`)
+      - Usa dados de `localidades.csv`
+   
+   e. **Validar Dados**  
+      - Remove nós sem conexões (opcional)
+      - Verifica consistência de cores
+      - Identifica elementos sem coordenadas
+
+7. **Geração de Layouts**  
+   - Calcula posições conforme algoritmo selecionado:
+     - **Circular**: Círculos concêntricos por nível
+     - **Orgânico**: Algoritmo de força (networkx)
+     - **Geográfico**: Posições por coordenadas geográficas
+     - **Hierárquico**: Disposição em níveis verticais
+
+8. **Geração do Diagrama**  
+   - Cria arquivo `.drawio` com:
+     - Múltiplas páginas/visões
+     - Elementos posicionados
+     - Conexões estilizadas
+     - Legenda automática
+     - Imagem de fundo (layout geográfico)
+
+9. **Saída**  
+   - Gera relatório final
+   - Salva arquivos com timestamp
+   - Exibe métricas de desempenho
+
+## Interface Gráfica (GUI)
+
+![Screenshot da Interface Gráfica](docs/images/gui-screenshot.png)
+> *Captura da interface Gráfica principal mostrando layout*
+
 📦 INSTALAÇÃO DE DEPENDÊNCIAS:
 ----------------------------
 
@@ -214,130 +338,6 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
     ⏱️ DICA FINAL: Visualize os arquivos em https://app.diagrams.net/
 
 ## Atualizações em https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
-
-## Fluxo do Programa
-
-```mermaid
-graph TD
-    A[Início] --> B{Modo de Execução}
-    B -->|CLI| C[Processar Argumentos]
-    B -->|GUI| D[Iniciar Interface Gráfica]
-    
-    C --> E[Validar Argumentos]
-    E --> F[Configurar Logging]
-    F --> G[Carregar Configuração]
-    G --> H[Buscar Arquivos de Entrada]
-    
-    D --> I[Carregar Configuração]
-    I --> J[Exibir Interface]
-    J --> K[Selecionar Arquivos e Opções]
-    K --> L[Gerar Topologias]
-    
-    H --> M{Arquivos Encontrados?}
-    M -->|Sim| N[Processar Arquivos]
-    M -->|Não| O[Iniciar GUI]
-    
-    N --> P[Loop por Arquivo de Conexões]
-    P --> Q[Instanciar Gerador]
-    Q --> R[Ler Elementos]
-    R --> S[Ler Conexões]
-    S --> T[Aplicar Regionalização]
-    T --> U[Validar Dados]
-    U --> V[Calcular Layouts]
-    V --> W[Gerar Diagrama Draw.io]
-    W --> X[Salvar Arquivo]
-    
-    L --> Y[Loop por Arquivo de Conexões]
-    Y --> Z[Processar Arquivo]
-    Z --> W
-    
-    X --> AA[Relatório Final]
-    AA --> AB[Fim]
-```
-```mermaid
-graph LR
-    A[config.json] --> B[Definições de Estilo]
-    C[elementos.csv] --> D[Camadas/Níveis]
-    E[localidades.csv] --> F[Regionalização]
-    G[conexoes.csv] --> H[Relações]
-    B & D & F & H --> I[Gerador]
-    I --> J[Diagrama Draw.io]
-```
-### Passo a Passo Explicado:
-
-1. **Início**  
-   - Script é iniciado via linha de comando ou execução direta
-
-2. **Modo de Execução**  
-   - **CLI**: Ativado com argumentos na linha de comando
-   - **GUI**: Ativado sem argumentos
-
-3. **Processamento CLI**  
-   - Valida argumentos (`-t`, `-r`, `-y`, etc.)
-   - Configura sistema de logs (arquivo/tela)
-   - Carrega `config.json`
-   - Busca arquivos CSV no diretório especificado
-
-4. **Interface Gráfica (GUI)**  
-   - Carrega configuração padrão
-   - Exibe janela interativa
-   - Permite seleção de arquivos e opções visuais
-
-5. **Busca de Arquivos**  
-   - Verifica existência de:
-     - `conexoes*.csv` (obrigatório)
-     - `elementos.csv` (opcional)
-     - `localidades.csv` (opcional)
-   - Se não encontrar arquivos, volta para GUI
-
-6. **Processamento Principal (por arquivo)**  
-   a. **Instanciar Gerador**  
-      - Inicializa estruturas de dados
-      - Carrega mapeamento de localidades  
-   
-   b. **Ler Elementos**  
-      - Processa `elementos.csv`
-      - Determina camadas/níveis
-      - Aplica cores personalizadas
-   
-   c. **Ler Conexões**  
-      - Processa `conexoes.csv`
-      - Cria relações entre equipamentos
-      - Gera camadas de conexão
-   
-   d. **Aplicar Regionalização**  
-      - Adiciona sufixos regionais às camadas (ex: `CORE_SUDESTE`)
-      - Usa dados de `localidades.csv`
-   
-   e. **Validar Dados**  
-      - Remove nós sem conexões (opcional)
-      - Verifica consistência de cores
-      - Identifica elementos sem coordenadas
-
-7. **Geração de Layouts**  
-   - Calcula posições conforme algoritmo selecionado:
-     - **Circular**: Círculos concêntricos por nível
-     - **Orgânico**: Algoritmo de força (networkx)
-     - **Geográfico**: Posições por coordenadas geográficas
-     - **Hierárquico**: Disposição em níveis verticais
-
-8. **Geração do Diagrama**  
-   - Cria arquivo `.drawio` com:
-     - Múltiplas páginas/visões
-     - Elementos posicionados
-     - Conexões estilizadas
-     - Legenda automática
-     - Imagem de fundo (layout geográfico)
-
-9. **Saída**  
-   - Gera relatório final
-   - Salva arquivos com timestamp
-   - Exibe métricas de desempenho
-
-## Interface Gráfica (GUI)
-
-![Screenshot da Interface Gráfica](docs/images/gui-screenshot.png)
-> *Captura da interface Gráfica principal mostrando layout*
 
 ## MIT License
 https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE
