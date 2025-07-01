@@ -302,7 +302,7 @@ DRAWIO_FOOTER = """
 class TopologyGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title(f"Gerador de Topologias de Rede para o Drawio") 
+        self.root.title(f"Gerador de Topologias de Rede - Drawio") 
         self.root.geometry("500x800")
         self.root.resizable(True, True)
         
@@ -398,7 +398,7 @@ class TopologyGUI:
         scrollbar.pack(side="right", fill="y")
         
         # Título
-        title = ttk.Label(scrollable_frame, text=f"Gerador de Topologias de Rede para o Drawio", 
+        title = ttk.Label(scrollable_frame, text=f"Gerador de Topologias de Rede - Drawio", 
                          font=("Arial", 16, "bold"))
         title.grid(row=0, column=0, columnspan=3, pady=(0, 15))
         
