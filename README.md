@@ -22,13 +22,13 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
         b. pesquise "Python 3", escolher versão superior
         c. selecionar instalar.
     2. Instalar dependências Python (CMD/PowerShell):
-		python -m pip install networkx chardet numpy
+		python -m pip install networkx chardet numpy pillow psutil
 
 	# Linux Debian:
     1. Instalar Python 3 e pip (apt)
 		apt update & apt install python3 pip python3-tk
     2. Instalar dependências Python
-		python3 -m pip install networkx chardet numpy
+		python3 -m pip install networkx chardet numpy pillow psutil
 
 🚀 COMO USAR:
 ------------
