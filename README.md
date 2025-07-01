@@ -1,4 +1,10 @@
-# GERADOR DE TOPOLOGIAS DE REDE
+# 🌐 GERADOR DE TOPOLOGIAS DE REDE PARA O DRAWIO
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)
+
+## 🔍 Visão Geral
+Ferramenta para geração automatizada de topologias hierárquicas de redes backbone nacionais, produzindo datasets prontos para visualização em ferramentas como Draw.io.
 
 ![Screenshot da Interface](docs/images/gui-screenshot.png)
 
