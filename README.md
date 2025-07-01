@@ -17,7 +17,7 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 - **Regionalização automática**: Ex: `CORE` → `CORE_SUDESTE`
 - **Duas interfaces**: CLI (linha de comando) e GUI (gráfica)
 
-## ⚙️ Instalação Rápida das dependências para execução do script
+## ⚙️ Instalação das dependências para execução do script
 
 ```bash
 # Windows (via Microsoft Store)
@@ -156,7 +156,7 @@ Ex: `rede_sp_20250615143045_geografico.drawio`
 
 > **Dica final**: Visualize os arquivos em [app.diagrams.net](https://app.diagrams.net/)
 
-## Dados para teste
+## Como gerar os arquivos de testes para carga do script
 Use o Gerador de Topologias para Backbone Nacional [https://github.com/flashbsb/Backbone-Network-Topology-Generator] para criar os arquivos conexoes.csv, elementos.csv e localidades.csv (aplicativo irá gerar a massa de dados de teste).
 
 ## Fluxo do Programa
@@ -207,6 +207,135 @@ graph LR
     B & D & F & H --> I[Gerador]
     I --> J[Diagrama Draw.io]
 ```
+
+### Análise do Script
+
+O script é uma ferramenta avançada para geração automática de diagramas de rede no formato do Draw.io.
+
+### 1. **Objetivo Principal**
+Transformar dados estruturados de equipamentos e conexões de rede em diagramas visuais profissionais com múltiplos layouts e camadas.
+
+### 2. **Arquivos de Entrada**
+- **`conexoes.csv` (Obrigatório)**: 
+  - Formato: `ponta-a;ponta-b;textoconexao;strokeWidth;strokeColor;dashed;fontStyle;fontSize`
+  - Define as ligações entre dispositivos
+- **`elementos.csv` (Opcional)**:
+  - Formato: `elemento;camada;nivel;cor;siteid;apelido`
+  - Atribui propriedades aos equipamentos
+- **`localidades.csv` (Opcional)**:
+  - Formato: `siteid;Localidade;RegiaoGeografica;Latitude;Longitude`
+  - Fornece dados geográficos para posicionamento
+
+### 3. **Arquivo de Configuração (`config.json`)**
+Define todo o comportamento visual:
+- **`LAYER_COLORS`**: Cores por tipo de equipamento
+- **`LAYER_STYLES`**: Formas e propriedades visuais
+- **`LAYER_DEFAULT_BY_PREFIX`**: Mapeamento automático de equipamentos para camadas
+- **`PAGE_DEFINITIONS`**: Visões pré-definidas (ex: "CORE", "EDGE")
+- **Parâmetros de Layout**: Configurações específicas para cada algoritmo
+
+### 4. **Algoritmos de Layout Implementados**
+1. **Circular**:
+   - Disposição em anéis concêntricos por nível
+   - Configuração: raio base e incremento
+
+2. **Orgânico**:
+   - Algoritmo de força (`spring_layout` do NetworkX)
+   - Parâmetros ajustáveis: distância entre nós, iterações
+
+3. **Geográfico**:
+   - Posicionamento por coordenadas geográficas
+   - Tratamento especial para nós sem localização
+   - Suporte a imagens de fundo (mapas)
+
+4. **Hierárquico**:
+   - Organização vertical por níveis
+   - Espaçamento configurável entre camadas
+
+### 5. **Funcionalidades Avançadas**
+- **Regionalização Automática**:
+  - Adiciona sufixos regionais às camadas (ex: `CORE_SUDESTE`)
+  - Requer dados geográficos completos
+
+- **Tratamento de Erros**:
+  - Nós sem coordenadas são posicionados em espiral
+  - Validação de arquivos e codificação automática
+
+- **Otimizações**:
+  - Escalonamento dinâmico de elementos
+  - Prevenção de sobreposição (layout geográfico)
+  - Controle de memória e performance
+
+### 6. **Sistema de Camadas**
+- **Estrutura Multi-nível**:
+  ```plaintext
+  INNER-CORE (Nível 1)
+  │
+  ├── OUTER-CORE (Nível 2)
+  │
+  ├── EDGE (Nível 5)
+  │   │
+  │   └── ACCESS-EDGE (Nível 6)
+  │
+  └── SEM_SITEID (Nós sem localização)
+  ```
+- **Visões Filtradas**:
+  - Exibição seletiva por tipo de equipamento
+  - Legendas automáticas
+
+### 7. **Geração de Saída**
+- Formato `.drawio` (XML estruturado)
+- Recursos visuais:
+  - Ícones específicos por tipo de equipamento
+  - Estilos de conexão personalizáveis
+  - Elementos bloqueáveis para diagramas finais
+
+### 8. **Mecanismos Especiais**
+- **Detecção de Codificação**: Identifica automaticamente charset dos CSVs
+- **Tratamento de Órfãos**: Opção para incluir/excluir nós isolados
+- **Escalonamento Dinâmico**: Ajusta tamanhos conforme densidade da rede
+- **Controle de Versões**: Sistema de versionamento integrado
+
+### 9. **Modos de Operação**
+1. **Interface Gráfica (GUI)**:
+   - Seleção visual de arquivos
+   - Pré-visualização de recursos disponíveis
+   - Controle interativo de parâmetros
+
+2. **Linha de Comando (CLI)**:
+   - Opções avançadas via argumentos
+   - Processamento em lote de múltiplos arquivos
+   - Geração de logs detalhados
+
+### Fluxo de Processamento Detalhado
+```python
+def process_file():
+  1. Carregar dados dos CSVs
+  2. Construir grafo de rede
+  3. Aplicar regionalização (se ativado)
+  4. Calcular posições conforme layout
+  5. Gerar XML com:
+     - Páginas múltiplas
+     - Camadas hierárquicas
+     - Estilos visuais
+  6. Validar e salvar arquivo
+```
+
+### Casos de Uso Típicos
+1. **Documentação de Infraestrutura**:
+   ```bash
+   python GeradorTopologias.py -t co -r infra.csv
+   ```
+2. **Planejamento de Expansão**:
+   ```bash
+   python GeradorTopologias.py -t gh -e novos_equipamentos.csv
+   ```
+3. **Análise Geográfica**:
+   ```bash
+   python GeradorTopologias.py -t g -s localidades_custom.csv
+   ```
+
+O script combina técnicas de processamento de dados, algoritmos de grafos e geração de visualizações para criar uma solução completa de documentação de redes, com ênfase em flexibilidade e qualidade visual.
 
 🔗 **Repositório Oficial**:  
 https://github.com/flashbsb/Backbone-Network-Topology-Generator
