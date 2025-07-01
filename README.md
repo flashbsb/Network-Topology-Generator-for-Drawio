@@ -20,8 +20,17 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 ## ⚙️ Instalação Rápida
 
 ```bash
-# Windows/Linux
-pip install networkx chardet numpy pillow psutil
+# Windows (via Microsoft Store)
+1. Abra Microsoft Store
+2. Busque "Python 3.12+"
+3. Clique em Instalar
+4. Instalar dependências Python (CMD/PowerShell): python -m pip install networkx chardet numpy pillow psutil
+
+# Linux (Debian/Ubuntu)
+1. Instalar Python 3 e pip (apt):
+sudo apt update && sudo apt install python3 pip python3-tk -y
+2. Instalar dependências Python
+python3 -m pip install networkx chardet numpy pillow psutil
 ```
 
 ## 🚀 Como Usar
