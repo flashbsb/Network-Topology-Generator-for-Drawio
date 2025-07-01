@@ -4,11 +4,9 @@
 ![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)
 
 ## 🔍 Visão Geral
-Ferramenta para geração automatizada de topologias hierárquicas de redes, produzindo datasets prontos para visualização em ferramentas como Draw.io.
+Ferramenta para geração automatizada de diagramas de rede (.drawio) através das informações das conexões entre elementos.
 
 ![Screenshot da Interface](docs/images/gui-screenshot.png)
-
-Ferramenta para geração automática de diagramas de rede (.drawio) a partir de dados de equipamentos e conexões.
 
 ## 🔥 Recursos Principais
 - **4 layouts**: Circular, Orgânico, Geográfico, Hierárquico
@@ -19,22 +17,53 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 
 ## ⚙️ Instalação das dependências para execução do script
 
-```bash
-# Windows (via Microsoft Store)
+# Windows
 1. Abra Microsoft Store
 2. Busque "Python 3.12+"
 3. Clique em Instalar
 4. Instalar dependências Python (CMD/PowerShell):
+```bash
 python -m pip install networkx chardet numpy pillow psutil
+```
+Caso queira um atalho no Windows para abrir a GUI diretamente, siga estes passos:
+
+### **Passo a Passo:**
+1. **Crie um novo atalho:**
+   - Clique com o botão direito do mouse em uma área vazia da área de trabalho.
+   - Selecione **Novo** > **Atalho**.
+
+2. **Defina o comando:**
+   - No campo **"Digite o local do item"**, insira:
+     ```cmd
+     cmd.exe /c python "c:\caminho\GeradorTopologias.py" & pause
+     ```
+     - Explicação:
+       - `cmd.exe /c`: Abre o prompt de comando para executar o script.
+       - `pause`: Mantém a janela aberta após a execução (útil para ver erros).  
+       *(Remova `& pause` se não quiser que a janela permaneça aberta)*.
+
+3. **Nomeie o atalho:**
+   - Dê um nome (ex: `GeradorTopologias`) e clique em **Concluir**.
+
+4. **Altere o ícone (opcional):**
+   - Clique com o botão direito no atalho > **Propriedades**.
+   - Na aba **Atalho**, clique em **Alterar Ícone...**.
+   - Procure ícones em:
+     - `C:\Windows\System32\SHELL32.dll`
+     - Ou use um arquivo `.ico` personalizado.
 
 # Linux (Debian/Ubuntu)
 1. Instalar Python 3 e pip (apt):
+```bash
 sudo apt update && sudo apt install python3 pip python3-tk -y
+```
 2. Instalar dependências Python
+```bash
 python3 -m pip install networkx chardet numpy pillow psutil
 ```
 
 ## 🚀 Como Usar
+Baixe os arquivos GeradorTopologias.py e config.json para a pasta em que irá trabalhar.
 
 ### Modo Gráfico (GUI)
 ```bash
@@ -64,6 +93,7 @@ python GeradorTopologias.py [OPÇÕES] conexoes1.csv conexoes2.csv ...
 3. **LAYER_DEFAULT_BY_PREFIX**: Mapeamento nome→camada
 4. **PAGE_DEFINITIONS**: Visões/páginas do diagrama
 5. **GEOGRAPHIC_LAYOUT**: Configuração de mapa
+> para não ocorrer sobreposição dos nós, os elementos poderão estar deslocados no mapa
 
 ## 📂 Arquivos de Entrada
 
@@ -113,10 +143,11 @@ python GeradorTopologias.py -y -d -o nc -t gh rede_principal.csv
 | Sem coordenadas | Nós são posicionados em espiral no centro |
 | Regionalização falha | Verifique correspondência de siteid entre arquivos |
 | Acentos incorretos | Salve CSVs como UTF-8 |
+| Nós vermelhos sem formatação e localização errada | Nó sem correspondência de siteid no arquivo localidades.csv |
 
 ## 📌 Dicas Importantes
 1. Use prefixos do config.json (RTIC, RTOC, RTPR) nos nomes dos equipamentos
-2. Para layout geográfico:
+2. Para layout geográfico e regionalização das camadas:
    - Arquivos `elementos.csv` e `localidades.csv` são obrigatórios
    - Nós sem siteid vão para camada `SEM_SITEID`
 3. Priorize `-g` para organizar seus arquivos:
@@ -133,10 +164,11 @@ Arquivos no formato:
 `NomeArquivo_TIMESTAMP_layout.drawio`  
 Ex: `rede_sp_20250615143045_geografico.drawio`
 
-> **Dica final**: Visualize os arquivos em [app.diagrams.net](https://app.diagrams.net/)
+> **Dica final**: Visualize os arquivos em [app.diagrams.net](https://app.diagrams.net/) ou para windows instale o drawio pelo Microsoft Store
 
 ## Como gerar os arquivos de testes para carga do script
-Use o Gerador de Topologias para Backbone Nacional [https://github.com/flashbsb/Backbone-Network-Topology-Generator] para criar os arquivos conexoes.csv, elementos.csv e localidades.csv (aplicativo irá gerar a massa de dados de teste).
+Use o Gerador de Topologias para Backbone Nacional [https://github.com/flashbsb/Backbone-Network-Topology-Generator] para criar os arquivos conexoes.csv, elementos.csv e localidades.csv.
+> aplicativo irá gerar a massa de dados para teste
 
 ## Fluxo do Programa
 
@@ -226,6 +258,7 @@ Define todo o comportamento visual:
    - Posicionamento por coordenadas geográficas
    - Tratamento especial para nós sem localização
    - Suporte a imagens de fundo (mapas)
+> para não ocorrer sobreposição dos nós, os elementos poderão estar deslocados no mapa
 
 4. **Hierárquico**:
    - Organização vertical por níveis
