@@ -4,7 +4,7 @@
 ![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)
 
 ## 🔍 Visão Geral
-Ferramenta para geração automatizada de topologias hierárquicas de redes backbone nacionais, produzindo datasets prontos para visualização em ferramentas como Draw.io.
+Ferramenta para geração automatizada de topologias hierárquicas de redes, produzindo datasets prontos para visualização em ferramentas como Draw.io.
 
 ![Screenshot da Interface](docs/images/gui-screenshot.png)
 
