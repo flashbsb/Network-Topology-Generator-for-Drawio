@@ -147,7 +147,7 @@ Ex: `rede_sp_20250615143045_geografico.drawio`
 > **Dica final**: Visualize os arquivos em [app.diagrams.net](https://app.diagrams.net/)
 
 ## Dados para teste
-Use o Gerador de Topologias para Backbone Nacional [https://github.com/flashbsb/Backbone-Network-Topology-Generator] para criar os arquivos conexoes.csv, elementos.csv e localidades.csv (aplicativo irá gerar a massa de dados de teste ).
+Use o Gerador de Topologias para Backbone Nacional [https://github.com/flashbsb/Backbone-Network-Topology-Generator] para criar os arquivos conexoes.csv, elementos.csv e localidades.csv (aplicativo irá gerar a massa de dados de teste).
 
 ## Fluxo do Programa
 
