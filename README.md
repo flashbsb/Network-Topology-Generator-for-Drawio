@@ -66,14 +66,14 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
        Formato:
          ponta-a;ponta-b;textoconexao;strokeWidth;strokeColor;dashed;fontStyle;fontSize
        Exemplo:
-         RTIC-SPO99-99;RTOC-SPO98-99;Link Principal;2;#036897;0;1;14
+         RTCO-SPO99-99;RTOC-SPO98-99;Link Principal;2;#036897;0;1;14
 
     2. elementos.csv (OPCIONAL - necessário para layout geográfico ou regionalização das camadas)
        Caso arquivo não existente, elemento não encontrado ou elemento sem definições, serão utilizadas as informações do arquivo json para definir camada, nivel e cor.
        Formato:
          elemento;camada;nivel;cor;siteid;apelido
        Exemplo:
-         RTIC-SPO99-99;INNER-CORE;1;#FF0000;SP01
+         RTCO-SPO99-99;CORE;1;#FF0000;SP01
 
     3. localidades.csv (OPCIONAL - necessário para layout geográfico ou regionalização das camadas)
        Formato:
@@ -89,7 +89,7 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
     {{
       "LAYER_COLORS": {{"INNER-CORE": "#036897", "default": "#036897"}},
       "LAYER_STYLES": {{
-        "INNER-CORE": {{
+        "CORE": {{
           "shape": "mxgraph.cisco.routers.router",
           "width": 80,
           "height": 80
@@ -103,7 +103,7 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
     1. LAYER_COLORS:
        • Define cores para cada camada da rede
        • Formato HEX (com ou sem #)
-       • Ex: "INNER-CORE": "036897"
+       • Ex: "CORE": "036897"
 
     2. LAYER_STYLES:
        • Configura aparência dos equipamentos
@@ -115,11 +115,11 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 
     3. LAYER_DEFAULT_BY_PREFIX
 	• Define a camada do elemento baseado em seu nome
- 	• Ex: "RTIC": "camada": "INNER-CORE", "nivel": 1
+ 	• Ex: "RTCO": "camada": "CORE", "nivel": 1
 
     4. CONNECTION_STYLES
 	• Define as caracteristicas das cores e formato das conexões por camada
- 	• Ex: "INNER-CORE": "color": "#036897", "strokeWidth": "2"
+ 	• Ex: "CORE": "color": "#036897", "strokeWidth": "2"
 
     5. CONNECTION_STYLE_BASE
 	• Define as caracteristicas de estilo das conexões
@@ -213,7 +213,131 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir de
 
     ⏱️ DICA FINAL: Visualize os arquivos em https://app.diagrams.net/
 
-Atualizações em https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
+## Atualizações em https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
+
+## Fluxo do Programa
+
+```mermaid
+graph TD
+    A[Início] --> B{Modo de Execução}
+    B -->|CLI| C[Processar Argumentos]
+    B -->|GUI| D[Iniciar Interface Gráfica]
+    
+    C --> E[Validar Argumentos]
+    E --> F[Configurar Logging]
+    F --> G[Carregar Configuração]
+    G --> H[Buscar Arquivos de Entrada]
+    
+    D --> I[Carregar Configuração]
+    I --> J[Exibir Interface]
+    J --> K[Selecionar Arquivos e Opções]
+    K --> L[Gerar Topologias]
+    
+    H --> M{Arquivos Encontrados?}
+    M -->|Sim| N[Processar Arquivos]
+    M -->|Não| O[Iniciar GUI]
+    
+    N --> P[Loop por Arquivo de Conexões]
+    P --> Q[Instanciar Gerador]
+    Q --> R[Ler Elementos]
+    R --> S[Ler Conexões]
+    S --> T[Aplicar Regionalização]
+    T --> U[Validar Dados]
+    U --> V[Calcular Layouts]
+    V --> W[Gerar Diagrama Draw.io]
+    W --> X[Salvar Arquivo]
+    
+    L --> Y[Loop por Arquivo de Conexões]
+    Y --> Z[Processar Arquivo]
+    Z --> W
+    
+    X --> AA[Relatório Final]
+    AA --> AB[Fim]
+```
+```mermaid
+graph LR
+    A[config.json] --> B[Definições de Estilo]
+    C[elementos.csv] --> D[Camadas/Níveis]
+    E[localidades.csv] --> F[Regionalização]
+    G[conexoes.csv] --> H[Relações]
+    B & D & F & H --> I[Gerador]
+    I --> J[Diagrama Draw.io]
+```
+### Passo a Passo Explicado:
+
+1. **Início**  
+   - Script é iniciado via linha de comando ou execução direta
+
+2. **Modo de Execução**  
+   - **CLI**: Ativado com argumentos na linha de comando
+   - **GUI**: Ativado sem argumentos
+
+3. **Processamento CLI**  
+   - Valida argumentos (`-t`, `-r`, `-y`, etc.)
+   - Configura sistema de logs (arquivo/tela)
+   - Carrega `config.json`
+   - Busca arquivos CSV no diretório especificado
+
+4. **Interface Gráfica (GUI)**  
+   - Carrega configuração padrão
+   - Exibe janela interativa
+   - Permite seleção de arquivos e opções visuais
+
+5. **Busca de Arquivos**  
+   - Verifica existência de:
+     - `conexoes*.csv` (obrigatório)
+     - `elementos.csv` (opcional)
+     - `localidades.csv` (opcional)
+   - Se não encontrar arquivos, volta para GUI
+
+6. **Processamento Principal (por arquivo)**  
+   a. **Instanciar Gerador**  
+      - Inicializa estruturas de dados
+      - Carrega mapeamento de localidades  
+   
+   b. **Ler Elementos**  
+      - Processa `elementos.csv`
+      - Determina camadas/níveis
+      - Aplica cores personalizadas
+   
+   c. **Ler Conexões**  
+      - Processa `conexoes.csv`
+      - Cria relações entre equipamentos
+      - Gera camadas de conexão
+   
+   d. **Aplicar Regionalização**  
+      - Adiciona sufixos regionais às camadas (ex: `CORE_SUDESTE`)
+      - Usa dados de `localidades.csv`
+   
+   e. **Validar Dados**  
+      - Remove nós sem conexões (opcional)
+      - Verifica consistência de cores
+      - Identifica elementos sem coordenadas
+
+7. **Geração de Layouts**  
+   - Calcula posições conforme algoritmo selecionado:
+     - **Circular**: Círculos concêntricos por nível
+     - **Orgânico**: Algoritmo de força (networkx)
+     - **Geográfico**: Posições por coordenadas geográficas
+     - **Hierárquico**: Disposição em níveis verticais
+
+8. **Geração do Diagrama**  
+   - Cria arquivo `.drawio` com:
+     - Múltiplas páginas/visões
+     - Elementos posicionados
+     - Conexões estilizadas
+     - Legenda automática
+     - Imagem de fundo (layout geográfico)
+
+9. **Saída**  
+   - Gera relatório final
+   - Salva arquivos com timestamp
+   - Exibe métricas de desempenho
+
+## Interface Gráfica (GUI)
+
+![Screenshot da Interface Gráfica](docs/images/gui-screenshot.png)
+> *Captura da interface principal mostrando seleção de arquivos e opções de layout*
 
 ## MIT License
 https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE
