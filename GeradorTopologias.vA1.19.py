@@ -25,7 +25,7 @@ from collections import defaultdict
 import platform
 import glob
 
-versionctr = "vA1.18"
+versionctr = "vA1.19"
 
 # Tente importar psutil para monitoramento de memória, mas não é obrigatório
 PSUTIL_AVAILABLE = False
@@ -302,7 +302,7 @@ DRAWIO_FOOTER = """
 class TopologyGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title(f"Gerador de Topologias de Rede {versionctr}") 
+        self.root.title(f"Gerador de Topologias de Rede para o Drawio") 
         self.root.geometry("500x800")
         self.root.resizable(True, True)
         
@@ -398,7 +398,7 @@ class TopologyGUI:
         scrollbar.pack(side="right", fill="y")
         
         # Título
-        title = ttk.Label(scrollable_frame, text=f"Gerador de Topologias de Rede {versionctr}", 
+        title = ttk.Label(scrollable_frame, text=f"Gerador de Topologias de Rede para o Drawio", 
                          font=("Arial", 16, "bold"))
         title.grid(row=0, column=0, columnspan=3, pady=(0, 15))
         
@@ -557,7 +557,7 @@ class TopologyGUI:
     def show_help(self):
         """Exibe janela de ajuda com conteúdo completo"""
         help_window = tk.Toplevel(self.root)
-        help_window.title("Ajuda do Gerador de Topologias {versionctr}")
+        help_window.title("Ajuda do Gerador de Topologias")
         help_window.geometry("900x700")
         help_window.resizable(True, True)
         
