@@ -185,7 +185,6 @@ python GeradorTopologias.py -y -d -o nc -t gh rede_principal.csv
 | Sem coordenadas | Nós são posicionados em espiral no centro |
 | Regionalização falha | Verifique correspondência de siteid entre arquivos |
 | Posição do elemento na topologia circular | Alterar a ordem do elemento no csv |
-| Mais de uma conexão entre dois elementos ficam sobrepostas | Inserir um texto na conexão para ajudar na viasualização e ajustar a conexão manualmente |
 | Nós sobrepostos | Aumente `radius_increment` (circular) ou `min_distance` (geográfico) |
 | Nós vermelhos sem formatação e localização errada | Nó sem correspondência de siteid no arquivo localidades.csv |
 | Elemento em posição geográfica deslocada | Trabalhar com massa de dados menores. Isto ocorre para evitar sobreposição |
