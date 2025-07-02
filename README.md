@@ -181,18 +181,20 @@ python GeradorTopologias.py -y -d -o nc -t gh rede_principal.csv
 | Problema | Solução |
 |----------|---------|
 | JSON inválido | Valide em [jsonlint.com](https://jsonlint.com) |
-| Nós sobrepostos | Aumente `radius_increment` (circular) ou `min_distance` (geográfico) |
+| Acentos incorretos | Salve CSVs como UTF-8 |
 | Sem coordenadas | Nós são posicionados em espiral no centro |
 | Regionalização falha | Verifique correspondência de siteid entre arquivos |
-| Acentos incorretos | Salve CSVs como UTF-8 |
+| Posição do elemento na topologia circular | Alterar a ordem do elemento no csv |
+| Mais de uma conexão entre dois elementos ficam sobrepostas | Inserir um texto na conexão para ajudar na viasualização e ajustar a conexão manualmente |
+| Nós sobrepostos | Aumente `radius_increment` (circular) ou `min_distance` (geográfico) |
 | Nós vermelhos sem formatação e localização errada | Nó sem correspondência de siteid no arquivo localidades.csv |
-| Posição dos elementos na topologia circular | Alterar a ordem do elemento da camada no csv |
-| Posição na coordenada errada na topologia geográfica | Trabalhar com massa de dados menores. Isto ocorre para evitar sobreposição |
+| Elemento em posição geográfica deslocada | Trabalhar com massa de dados menores. Isto ocorre para evitar sobreposição |
+
 
 ## 📌 Dicas Importantes
-1. Todas as definições de padrão dos nós, conexões, camadas, paginas e layouts devem ser realizados no config.json
-2. Somente com o arquivo conexoes.csv com a informação da ponta-a e a ponta-b, é possivel gerar as topologias (com exceção a topologia geografica e criação das camadas regionalizadas)
-3. As informações de customização (as que são opcionais nos csv´s) tem preferência sobre as definições do config.json
+1. Prefira definir o padrão dos nós, conexões, camadas, paginas e layouts no config.json, deixar o csv para customizar se necessário
+2. Com o arquivo conexoes.csv somente com a informação da ponta-a e a ponta-b, é possivel gerar as topologias (com exceção a topologia geográfica e criação das camadas regionalizadas)
+3. As informações de customização (que são opcionais nos csv´s) tem preferência sobre as definições do config.json
 4. Customize o prefixo do config.json dos nomes dos equipamentos para determinar sua camada
 5. Para layout geográfico e regionalização das camadas:
    - Arquivos `elementos.csv` e `localidades.csv` são obrigatórios
