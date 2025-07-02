@@ -1,5 +1,26 @@
 {
-    "LAYER_COLORS": {
+	"LAYER_DEFAULT_BY_PREFIX": {
+        "RTIC": {"camada": "INNER-CORE", "nivel": 1},
+        "RTOC": {"camada": "OUTER-CORE", "nivel": 2},
+        "RTRR": {"camada": "REFLECTOR", "nivel": 3},
+        "RTPR": {"camada": "PEERING", "nivel": 4},
+        "RTED": {"camada": "EDGE", "nivel": 5},
+        "RTAC": {"camada": "ACCESS-EDGE", "nivel": 6},
+		"RTAG": {"camada": "ACCESS-EDGE", "nivel": 6},
+        "DWDM": {"camada": "DWDM", "nivel": 7},
+        "RTMA": {"camada": "METRO", "nivel": 8},
+        "EAF": {"camada": "METRO", "nivel": 8},
+        "SWAC": {"camada": "METRO", "nivel": 8},
+		"SWED": {"camada": "METRO", "nivel": 8},
+        "SMAG": {"camada": "METRO", "nivel": 8},
+		"SMAC": {"camada": "METRO", "nivel": 8},
+		"SWL2": {"camada": "METRO", "nivel": 8},
+		"SWAG": {"camada": "METRO", "nivel": 8},
+		"SWCE": {"camada": "METRO", "nivel": 9},
+		"PTT": {"camada": "PTT", "nivel": 10},
+        "default": {"camada": "default", "nivel": 10}
+    },
+	"LAYER_COLORS": {
 		"PTT": "#000000",
         "INNER-CORE": "#036897",
         "OUTER-CORE": "#0385BE",
@@ -101,26 +122,16 @@
             "height": 50
         }
     },
-	"LAYER_DEFAULT_BY_PREFIX": {
-        "RTIC": {"camada": "INNER-CORE", "nivel": 1},
-        "RTOC": {"camada": "OUTER-CORE", "nivel": 2},
-        "RTRR": {"camada": "REFLECTOR", "nivel": 3},
-        "RTPR": {"camada": "PEERING", "nivel": 4},
-        "RTED": {"camada": "EDGE", "nivel": 5},
-        "RTAC": {"camada": "ACCESS-EDGE", "nivel": 6},
-		"RTAG": {"camada": "ACCESS-EDGE", "nivel": 6},
-        "DWDM": {"camada": "DWDM", "nivel": 7},
-        "RTMA": {"camada": "METRO", "nivel": 8},
-        "EAF": {"camada": "METRO", "nivel": 8},
-        "SWAC": {"camada": "METRO", "nivel": 8},
-		"SWED": {"camada": "METRO", "nivel": 8},
-        "SMAG": {"camada": "METRO", "nivel": 8},
-		"SMAC": {"camada": "METRO", "nivel": 8},
-		"SWL2": {"camada": "METRO", "nivel": 8},
-		"SWAG": {"camada": "METRO", "nivel": 8},
-		"SWCE": {"camada": "METRO", "nivel": 9},
-		"PTT": {"camada": "PTT", "nivel": 10},
-        "default": {"camada": "default", "nivel": 10}
+    "NODE_STYLE": {
+        "html": "1",
+        "pointerEvents": "1",
+        "dashed": "0",
+        "strokeWidth": "2",
+        "verticalLabelPosition": "bottom",
+        "verticalAlign": "top",
+        "align": "center",
+        "outlineConnect": "0",
+        "fontStyle": "1"
     },
     "CONNECTION_STYLES": {
         "INNER-CORE": {"color": "#036897", "strokeWidth": "2"},
@@ -134,25 +145,6 @@
         "METRO": {"color": "#005073", "strokeWidth": "1"},
         "default": {"color": "#000000", "strokeWidth": "1"}
     },
-    "PAGE_DEFINITIONS": [
-        {"name": "GERAL", "visible_layers": null},
-        {"name": "CORE", "visible_layers": ["INNER-CORE", "OUTER-CORE"]},
-        {"name": "REFLECTOR +INNER", "visible_layers": ["INNER-CORE", "REFLECTOR-VPN", "REFLECTOR"]},
-		{"name": "PEERING +INNER", "visible_layers": ["INNER-CORE", "PEERING", "PTT"]},
-        {"name": "EDGE +CORE", "visible_layers": ["INNER-CORE", "OUTER-CORE", "EDGE", "ACCESS-EDGE"]},
-        {"name": "METRO +EDGE", "visible_layers": ["EDGE", "ACCESS-EDGE","METRO"]}
-    ],
-    "NODE_STYLE": {
-        "html": "1",
-        "pointerEvents": "1",
-        "dashed": "0",
-        "strokeWidth": "2",
-        "verticalLabelPosition": "bottom",
-        "verticalAlign": "top",
-        "align": "center",
-        "outlineConnect": "0",
-        "fontStyle": "1"
-    },
     "CONNECTION_STYLE_BASE": {
         "endArrow": "none",
         "html": "1",
@@ -161,7 +153,16 @@
         "fontStyle": "1",
         "fontSize": "16",
         "labelBackgroundColor": "white"
+	"curved": "0"
     },
+    "PAGE_DEFINITIONS": [
+        {"name": "GERAL", "visible_layers": null},
+        {"name": "CORE", "visible_layers": ["INNER-CORE", "OUTER-CORE"]},
+        {"name": "REFLECTOR +INNER", "visible_layers": ["INNER-CORE", "REFLECTOR-VPN", "REFLECTOR"]},
+		{"name": "PEERING +INNER", "visible_layers": ["INNER-CORE", "PEERING", "PTT"]},
+        {"name": "EDGE +CORE", "visible_layers": ["INNER-CORE", "OUTER-CORE", "EDGE", "ACCESS-EDGE"]},
+        {"name": "METRO +EDGE", "visible_layers": ["EDGE", "ACCESS-EDGE","METRO"]}
+    ],
     "CIRCULAR_LAYOUT": {
 		"locked": 1,
         "node_scale_factor": 1,
