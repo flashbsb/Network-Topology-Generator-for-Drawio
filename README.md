@@ -3,6 +3,47 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)
 
+### 🧩 Facilitando a Documentação de Redes com um Clique
+
+Você trabalha com redes complexas e precisa gerar topologias organizadas e claras?
+
+Conheça o **Gerador de Topologias para Draw\.io**: uma ferramenta que transforma arquivos CSV em diagramas `.drawio` prontos para uso. Ideal para quem atua com ISPs, backbones, operadoras e redes corporativas.
+
+🔹 **O que ele faz?**
+Gera diagramas de rede automaticamente a partir de arquivos simples (CSV), permitindo visualizar conexões e elementos com diferentes estilos, formas, camadas e layouts.
+
+🔹 **Para que serve?**
+👉 Documentar infraestrutura
+👉 Visualizar backbone ou rede regional
+👉 Ajudar no suporte e troubleshooting
+👉 Automatizar relatórios técnicos e operacionais
+
+🔧 **Recursos em destaque**:
+
+* 4 tipos de layout: Circular, Orgânico, Geográfico e Hierárquico
+* Interface gráfica (GUI) e linha de comando (CLI)
+* Regionalização automática (baseada em coordenadas)
+* Legendas automáticas, filtros por camada e suporte a nós sem localização
+* Personalização avançada com `config.json` (cores, formas, estilos, páginas)
+* Integração com mapas geográficos e DWDM/PTT/Reflectors
+
+🎯 **Fácil de usar**
+
+* Use sem complicações no modo gráfico
+* Ou automatize com linha de comando
+* Compatível com Windows, Linux e Mac
+
+📎 Tudo que você precisa são arquivos CSV com conexões, elementos e, se quiser, coordenadas.
+
+🔗 Repositório no GitHub:
+[https://github.com/flashbsb/Network-Topology-Generator-for-Drawio](https://github.com/flashbsb/Network-Topology-Generator-for-Drawio)
+
+📉 Reduza horas de trabalho manual e gere topologias consistentes com apenas alguns cliques.
+
+\#Redes #NetworkTopology #Drawio #Automacao #InfraestruturaTI #Backbone #Python #Telecom
+
+---
+
 ## 🔍 Visão Geral
 Ferramenta para geração automatizada de diagramas de rede (.drawio) através das informações das conexões entre elementos.
 
