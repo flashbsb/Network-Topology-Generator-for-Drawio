@@ -1,4 +1,4 @@
-# 🌐 GERADOR DE TOPOLOGIAS DE REDE - DRAWIO
+# 🌐 GERADOR DE TOPOLOGIAS DE REDE PARA O DRAWIO
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)
@@ -7,7 +7,7 @@
 
 Você trabalha com redes complexas e precisa gerar topologias organizadas e claras?
 
-Conheça o **Gerador de Topologias para Draw\.io**: uma ferramenta que transforma arquivos CSV em diagramas `.drawio` prontos para uso. Ideal para quem atua com ISPs, backbones, operadoras e redes corporativas.
+Conheça o **Gerador de Topologias de Redes para Draw\.io**: uma ferramenta que transforma arquivos CSV em diagramas `.drawio` prontos para uso. Ideal para quem atua com ISPs, backbones, operadoras e redes corporativas.
 
 🔹 **O que ele faz?**
 Gera diagramas de rede automaticamente a partir de arquivos simples (CSV), permitindo visualizar conexões e elementos com diferentes estilos, formas, camadas e layouts.
