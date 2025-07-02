@@ -153,7 +153,7 @@
         "fontStyle": "1",
         "fontSize": "16",
         "labelBackgroundColor": "white",
-	"curved": "0"
+	"curved": "1"
     },
     "PAGE_DEFINITIONS": [
         {"name": "GERAL", "visible_layers": null},
