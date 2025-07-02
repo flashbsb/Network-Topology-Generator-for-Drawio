@@ -2126,20 +2126,95 @@ class TopologyGenerator:
             if node in self.nodes and self.nodes[node]['camada'] in expanded_visible_layers:
                 generated_nodes.add(node)
         
+        # --- INÍCIO DA MODIFICAÇÃO ---
+        # Lógica para tratar múltiplas conexões
+        
+        # 1. Contar quantas conexões existem entre cada par de nós
+        connection_counts = defaultdict(int)
+        # Usamos frozenset para tratar a conexão A->B da mesma forma que B->A
+        for conn in self.connections:
+            if (conn['origem'] in generated_nodes and conn['destino'] in generated_nodes):
+                key = frozenset([conn['origem'], conn['destino']])
+                connection_counts[key] += 1
+
+        # 2. Manter o controle do índice da conexão atual que estamos desenhando
+        connection_indices = defaultdict(int)
+        
+        # Fator de espaçamento entre as linhas (em pixels)
+        spacing_factor = 20
+        # --- FIM DA MODIFICAÇÃO ---
+
         # Adicionar conexões apenas se ambos os nós existirem
         for conn in self.connections:
             if (conn['camada'] not in expanded_visible_layers or
                 conn['origem'] not in self.node_ids or
                 conn['destino'] not in self.node_ids):
                 continue
-                
-            # CORREÇÃO: Passar scale_factor como segundo argumento
+            
+            # --- INÍCIO DA MODIFICAÇÃO ---
+            origem_node = conn['origem']
+            destino_node = conn['destino']
+            
+            # Obter o estilo original da conexão
             style = self._get_connection_style(conn, scale_factor)
+            
+            # Geometria padrão
+            geometry_xml = '<mxGeometry relative="1" as="geometry"/>'
+
+            # Chave para este par de conexões
+            key = frozenset([origem_node, destino_node])
+            total_conns = connection_counts[key]
+            
+            if total_conns > 1:
+                # Obter as coordenadas dos nós de origem e destino
+                x1, y1 = positions[origem_node]
+                x2, y2 = positions[destino_node]
+
+                # Calcular o ponto médio
+                mid_x = (x1 + x2) / 2
+                mid_y = (y1 + y2) / 2
+
+                # Calcular o vetor da linha e seu comprimento
+                dx = x2 - x1
+                dy = y2 - y1
+                length = math.sqrt(dx**2 + dy**2)
+                
+                # Obter o índice desta conexão específica
+                conn_index = connection_indices[key]
+
+                # Calcular um offset para distribuir as linhas
+                # A fórmula abaixo centra o grupo de linhas. Ex para 3 linhas (índices 0, 1, 2):
+                # offset ficará proporcional a -1, 0, 1.
+                offset_magnitude = spacing_factor * (conn_index - (total_conns - 1) / 2.0)
+
+                # Calcular o ponto de controle deslocado perpendicularmente
+                if length > 0:
+                    # Vetor perpendicular normalizado: (-dy/length, dx/length)
+                    point_x = mid_x - (dy / length) * offset_magnitude
+                    point_y = mid_y + (dx / length) * offset_magnitude
+                else: # Caso de nós sobrepostos
+                    point_x = mid_x + offset_magnitude
+                    point_y = mid_y
+
+                # Forçar estilo curvo e criar a nova geometria com o ponto de controle
+                style += ";curved=1"
+                geometry_xml = (
+                    '          <mxGeometry relative="1" as="geometry">\n'
+                    '            <Array as="points">\n'
+                    f'              <mxPoint x="{point_x:.2f}" y="{point_y:.2f}"/>\n'
+                    '            </Array>\n'
+                    '          </mxGeometry>'
+                )
+                
+                # Incrementar o índice para a próxima conexão entre este mesmo par
+                connection_indices[key] += 1
+            # --- FIM DA MODIFICAÇÃO ---
+                
             page_content.extend([
                 f'        <mxCell id="{uuid.uuid4()}" value="{conn["texto_conexao"]}" style="{style}" edge="1"',
                 f'          parent="{self.layer_ids[conn["camada"]]}" source="{self.node_ids[conn["origem"]]}"',
                 f'          target="{self.node_ids[conn["destino"]]}">',
-                '          <mxGeometry relative="1" as="geometry"/>',
+                f'          {geometry_xml}',
                 '        </mxCell>'
             ])
 
