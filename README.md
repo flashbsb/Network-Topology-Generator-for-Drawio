@@ -25,7 +25,8 @@ Ferramenta para geração automatizada de diagramas de rede (.drawio) através d
 ```bash
 python -m pip install networkx chardet numpy pillow psutil
 ```
-Caso queira um atalho no Windows para abrir a GUI diretamente, siga estes passos:
+
+## Criar atalho no Windows para abrir a interface gráfica diretamente (Opcional)
 
 ### **Passo a Passo:**
 1. **Crie um novo atalho:**
