@@ -33,7 +33,7 @@ Gera diagramas de rede automaticamente a partir de arquivos simples (CSV), permi
 * Ou automatize com linha de comando
 * Compatível com Windows, Linux e Mac
 
-📎 Tudo que você precisa são arquivos CSV com conexões das ponta-a e ponta-b dos elementos e, se quiser, coordenadas (camadas regionalizadas ou topologia geográfica).
+📎 Tudo que você precisa são arquivos CSV com conexões das ponta-a e ponta-b e, se quiser, coordenadas (camadas regionalizadas ou topologia geográfica).
 
 🔗 Repositório no GitHub:
 [https://github.com/flashbsb/Network-Topology-Generator-for-Drawio](https://github.com/flashbsb/Network-Topology-Generator-for-Drawio)
