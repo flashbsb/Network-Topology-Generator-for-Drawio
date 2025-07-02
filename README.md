@@ -13,10 +13,10 @@ Conheça o **Gerador de Topologias para Draw\.io**: uma ferramenta que transform
 Gera diagramas de rede automaticamente a partir de arquivos simples (CSV), permitindo visualizar conexões e elementos com diferentes estilos, formas, camadas e layouts.
 
 🔹 **Para que serve?**
-👉 Documentar infraestrutura
-👉 Visualizar backbone ou rede regional
-👉 Ajudar no suporte e troubleshooting
-👉 Automatizar relatórios técnicos e operacionais
+- Documentar infraestrutura
+- Visualizar backbone ou rede regional
+- Ajudar no suporte e troubleshooting
+- Automatizar relatórios técnicos e operacionais
 
 🔧 **Recursos em destaque**:
 
@@ -33,7 +33,7 @@ Gera diagramas de rede automaticamente a partir de arquivos simples (CSV), permi
 * Ou automatize com linha de comando
 * Compatível com Windows, Linux e Mac
 
-📎 Tudo que você precisa são arquivos CSV com conexões, elementos e, se quiser, coordenadas.
+📎 Tudo que você precisa são arquivos CSV com conexões das ponta-a e ponta-b dos elementos e, se quiser, coordenadas (camadas regionalizadas ou topologia geográfica).
 
 🔗 Repositório no GitHub:
 [https://github.com/flashbsb/Network-Topology-Generator-for-Drawio](https://github.com/flashbsb/Network-Topology-Generator-for-Drawio)
@@ -186,13 +186,19 @@ python GeradorTopologias.py -y -d -o nc -t gh rede_principal.csv
 | Regionalização falha | Verifique correspondência de siteid entre arquivos |
 | Acentos incorretos | Salve CSVs como UTF-8 |
 | Nós vermelhos sem formatação e localização errada | Nó sem correspondência de siteid no arquivo localidades.csv |
+| Posição dos elementos na topologia circular | Alterar a ordem do elemento da camada no csv |
+| Posição na coordenada errada na topologia geográfica | Trabalhar com massa de dados menores. Isto ocorre para evitar sobreposição |
 
 ## 📌 Dicas Importantes
-1. Use prefixos do config.json (RTIC, RTOC, RTPR) nos nomes dos equipamentos
-2. Para layout geográfico e regionalização das camadas:
+1. Todas as definições de padrão dos nós, conexões, camadas, paginas e layouts devem ser realizados no config.json
+2. Somente com o arquivo conexoes.csv com a informação da ponta-a e a ponta-b, é possivel gerar as topologias (com exceção a topologia geografica e criação das camadas regionalizadas)
+3. As informações de customização (as que são opcionais nos csv´s) tem preferência sobre as definições do config.json
+4. Customize o prefixo do config.json dos nomes dos equipamentos para determinar sua camada
+5. Para layout geográfico e regionalização das camadas:
    - Arquivos `elementos.csv` e `localidades.csv` são obrigatórios
    - Nós sem siteid vão para camada `SEM_SITEID`
-3. Priorize `-g` para organizar seus arquivos:
+6. Na cli, ao executar o script
+   -  na mesma pasta dos arquivos de massa de dados, basta informar os arquivos de conexoes (pode ser mais de um)
    ```
    projeto/
    ├── conexoes.csv
