@@ -2764,7 +2764,5 @@ def main():
         
     logger.info("✨ Todas as operações concluídas com sucesso")
 
-# ... (o restante do código permanece igual) ...
-
 if __name__ == "__main__":
     main()
