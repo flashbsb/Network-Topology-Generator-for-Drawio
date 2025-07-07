@@ -25,7 +25,7 @@ from collections import defaultdict
 import platform
 import glob
 
-versionctr = "vA1.24"
+versionctr = "beta 1.28"
 
 # Tente importar psutil para monitoramento de memória, mas não é obrigatório
 PSUTIL_AVAILABLE = False
@@ -256,8 +256,8 @@ DRAWIO_FOOTER = """
 class TopologyGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title(f"Gerador de Topologias de Rede - Drawio") 
-        self.root.geometry("500x800")
+        self.root.title(f"Gerador de Topologias de Rede para o Drawio - {versionctr}") 
+        self.root.geometry("550x800")
         self.root.resizable(True, True)
         
         # Configurações padrão
@@ -273,12 +273,14 @@ class TopologyGUI:
         self.organic_layout = tk.BooleanVar(value=False)
         self.geographic_layout = tk.BooleanVar(value=False)
         self.hierarchical_layout = tk.BooleanVar(value=False)
-        self.generate_logs = tk.BooleanVar(value=False)  # Nova opção para logs
+        self.generate_logs = tk.BooleanVar(value=False)
         self.ignore_optional = tk.BooleanVar(value=False)
+        self.hide_connection_layers = tk.BooleanVar(value=False)
+        self.hide_node_names = tk.BooleanVar(value=False)
         
-        # Variáveis de controle - inicializar como False
-        self.hide_connection_layers = tk.BooleanVar(value=False)  # Valor inicial desmarcado
-        self.hide_node_names = tk.BooleanVar(value=False)         # Valor inicial desmarcado     
+        # Inicialização das variáveis de filtro (CORREÇÃO ADICIONADA)
+        self.filter_type = tk.StringVar(value="none")  # "none", "in", "rn", "ic", "rc"
+        self.filter_value = tk.StringVar()
         
         # Verificar disponibilidade de recursos
         self.has_elementos = os.path.exists("elementos.csv")
@@ -331,182 +333,422 @@ class TopologyGUI:
             logger.exception("Erro ao carregar configuração", exc_info=True)
             return default_config
 
+    def _on_mousewheel(self, event, canvas):
+        """Manipula eventos de rolagem do mouse para o canvas"""
+        if sys.platform.startswith('linux'):
+            if event.num == 4:  # Roda para cima
+                canvas.yview_scroll(-1, "units")
+            elif event.num == 5: # Roda para baixo
+                canvas.yview_scroll(1, "units")
+        else:
+            # Windows e macOS
+            delta = event.delta
+            if sys.platform == "darwin":  # Ajuste para macOS
+                delta = -delta
+                
+            if delta > 0:
+                canvas.yview_scroll(-1, "units")
+            else:
+                canvas.yview_scroll(1, "units")
+
     def create_widgets(self):
-        # Frame principal com scrollbar
+        # Configurar estilo
+        style = ttk.Style()
+        style.configure("Title.TLabel", font=("Arial", 16, "bold"), foreground="#036897")
+        style.configure("Section.TLabelframe.Label", font=("Arial", 10, "bold"), foreground="#036897")
+        style.configure("Accent.TButton", font=("Arial", 10, "bold"), foreground="#000000", background="#036897")
+        style.configure("Help.TButton", font=("Arial", 10, "bold"), foreground="#000000", background="#FF8C00")
+
+        # Frame principal com scrollbar - CORREÇÃO DO SCROLL
         main_frame = ttk.Frame(self.root)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Canvas para scroll
-        canvas = tk.Canvas(main_frame)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        # Canvas e scrollbar
+        canvas = tk.Canvas(main_frame, highlightthickness=0)
         scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
-        
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        
+
+        # Configurar sistema de scroll
+        def _configure_canvas(e):
+            # Atualiza a região de scroll e força redimensionamento
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.yview_moveto(0)  # Mantém no topo ao redimensionar
+        scrollable_frame.bind("<Configure>", _configure_canvas)
+
+        # Criar janela no canvas para o frame interno
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        # Configurar scrollbar
         canvas.configure(yscrollcommand=scrollbar.set)
-        
+
+        # Permitir que o frame interno expanda com o conteúdo
+        scrollable_frame.bind("<Configure>", 
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+            
+        # Configurar expansão do grid
+        scrollable_frame.grid_rowconfigure(0, weight=1)
+        scrollable_frame.grid_columnconfigure(0, weight=1)
+
+        # Função aprimorada para rolagem
+        def _on_mousewheel(event, canvas):
+            """Manipula eventos de rolagem do mouse para o canvas"""
+            if sys.platform.startswith('linux'):
+                if event.num == 4:  # Roda para cima
+                    canvas.yview_scroll(-1, "units")
+                elif event.num == 5: # Roda para baixo
+                    canvas.yview_scroll(1, "units")
+            else:
+                # Windows e macOS
+                delta = event.delta
+                if sys.platform == "darwin":  # Ajuste para macOS
+                    delta = -delta
+                    
+                if delta > 0:
+                    canvas.yview_scroll(-1, "units")
+                else:
+                    canvas.yview_scroll(1, "units")
+
+        # Vincular eventos de rolagem corretamente
+        def _bind_mousewheel(widget):
+            # Vincula eventos para Windows e macOS
+            widget.bind("<MouseWheel>", lambda e: _on_mousewheel(e, canvas))
+            
+            # Vincula eventos específicos para Linux
+            widget.bind("<Button-4>", lambda e: _on_mousewheel(e, canvas))
+            widget.bind("<Button-5>", lambda e: _on_mousewheel(e, canvas))
+
+        # Vincular eventos a todos os componentes relevantes
+        _bind_mousewheel(canvas)
+        _bind_mousewheel(scrollable_frame)
+        _bind_mousewheel(main_frame)  # Adicione esta linha
+        _bind_mousewheel(self.root)   # Adicione esta linha
+
+        # Forçar o foco no frame principal
+        main_frame.bind("<Enter>", lambda e: main_frame.focus_set())
+
+        # Empacotar os elementos corretamente
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+
+        # ========= CABEÇALHO =========
+        header_frame = ttk.Frame(scrollable_frame)
+        header_frame.grid(row=0, column=0, columnspan=2, sticky="we", pady=(0, 10))
         
-        # Título
-        title = ttk.Label(scrollable_frame, text=f"Gerador de Topologias de Rede - Drawio", 
-                         font=("Arial", 16, "bold"))
-        title.grid(row=0, column=0, columnspan=3, pady=(0, 15))
-        
-        # Frame de status
-        status_frame = ttk.LabelFrame(scrollable_frame, text="Status de Recursos")
-        status_frame.grid(row=1, column=0, columnspan=3, sticky="we", padx=5, pady=5)
-        status_frame.columnconfigure(1, weight=1)
-        
-        # Status dos arquivos
-        ttk.Label(status_frame, text="config.json:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
-        config_status = ttk.Label(status_frame, text="✔ Disponível" if self.has_config else "❌ Não encontrado", 
-                                foreground="green" if self.has_config else "red")
-        config_status.grid(row=0, column=1, sticky="w", padx=5, pady=2)
-        
-        ttk.Label(status_frame, text="elementos.csv:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
-        elementos_status = ttk.Label(status_frame, text="✔ Disponível" if self.has_elementos else "⚠ Opcional não encontrado", 
-                                   foreground="green" if self.has_elementos else "orange")
-        elementos_status.grid(row=1, column=1, sticky="w", padx=5, pady=2)
-        
-        ttk.Label(status_frame, text="localidades.csv:").grid(row=2, column=0, sticky="w", padx=5, pady=2)
-        localidades_status = ttk.Label(status_frame, text="✔ Disponível" if self.has_localidades else "⚠ Opcional não encontrado", 
-                                     foreground="green" if self.has_localidades else "orange")
-        localidades_status.grid(row=2, column=1, sticky="w", padx=5, pady=2)
-        
-        # Frame de arquivos
-        files_frame = ttk.LabelFrame(scrollable_frame, text="Arquivos de Entrada")
-        files_frame.grid(row=2, column=0, columnspan=3, sticky="we", padx=5, pady=10)
-        files_frame.columnconfigure(2, weight=1)
-        
-        # Conexões
-        ttk.Label(files_frame, text="Arquivo(s) de Conexões:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        ttk.Button(files_frame, text="Selecionar...", command=self.select_connection_files).grid(row=0, column=1, padx=5, pady=5)
-        self.connections_label = ttk.Label(files_frame, text="Nenhum selecionado", foreground="gray", wraplength=400)
-        self.connections_label.grid(row=0, column=2, sticky="w", padx=5, pady=5)
-        
-        # Elementos
-        ttk.Label(files_frame, text="Arquivo de Elementos:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
-        ttk.Button(files_frame, text="Selecionar...", command=self.select_elementos_file).grid(row=1, column=1, padx=5, pady=5)
-        self.elementos_label = ttk.Label(files_frame, text=self.elementos_file if self.elementos_file else "Padrão (elementos.csv)", 
-                                       foreground="blue", wraplength=400)
-        self.elementos_label.grid(row=1, column=2, sticky="w", padx=5, pady=5)
-        
-        # Localidades
-        ttk.Label(files_frame, text="Arquivo de Localidades:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
-        ttk.Button(files_frame, text="Selecionar...", command=self.select_localidades_file).grid(row=2, column=1, padx=5, pady=5)
-        self.localidades_label = ttk.Label(files_frame, text=self.localidades_file if self.localidades_file else "Padrão (localidades.csv)", 
-                                         foreground="blue", wraplength=400)
-        self.localidades_label.grid(row=2, column=2, sticky="w", padx=5, pady=5)
-        
-        # Frame de opções
-        options_frame = ttk.LabelFrame(scrollable_frame, text="Opções de Geração")
-        options_frame.grid(row=3, column=0, columnspan=3, sticky="we", padx=5, pady=10)
-        
-        # Opções de processamento
-        self.orphans_check = ttk.Checkbutton(options_frame, text="Incluir elementos sem conexões", 
-                       variable=self.include_orphans)
-        self.orphans_check.pack(anchor="w", padx=5, pady=5)
-        
-        self.ignore_optional_check = ttk.Checkbutton(
-            options_frame, 
-            text="Remover customizações opcionais dos elementos e conexões",
-            variable=self.ignore_optional
+        # Título e botão de ajuda lado a lado
+        title = ttk.Label(
+            header_frame, 
+            text=f"  Gerador de Topologias de Rede",
+            style="Title.TLabel"
         )
-        self.ignore_optional_check.pack(anchor="w", padx=5, pady=5)        
-        
-        self.regional_check = ttk.Checkbutton(options_frame, text="Regionalização das camadas", 
-                       variable=self.regionalization)
-        self.regional_check.pack(anchor="w", padx=5, pady=5)
-        
-        # Novas opções de visualização
-        self.hide_conn_check = ttk.Checkbutton(options_frame, text="Ocultar camadas de conexão", 
-                       variable=self.hide_connection_layers)
-        self.hide_conn_check.pack(anchor="w", padx=5, pady=5)
-        
-        self.hide_names_check = ttk.Checkbutton(options_frame, text="Gerar elementos sem nomes", 
-                       variable=self.hide_node_names)
-        self.hide_names_check.pack(anchor="w", padx=5, pady=5)
-        
-        # Nova opção para gerar logs
-        self.logs_check = ttk.Checkbutton(options_frame, text="Gerar logs", 
-                       variable=self.generate_logs)
-        self.logs_check.pack(anchor="w", padx=5, pady=5)
-        
-        # Layouts
-        layouts_frame = ttk.LabelFrame(options_frame, text="Layouts")
-        layouts_frame.pack(fill="x", padx=5, pady=5)
-        
-        buttons_frame = ttk.Frame(layouts_frame)
-        buttons_frame.pack(pady=5)
+        title.pack(side="left", padx=(0, 10))
 
-        # Botão "Marcar todos"
-        self.mark_all_btn = ttk.Button(
-            buttons_frame, 
-            text="Marcar Todos",
-            command=self.mark_all_layouts
-        )
-        self.mark_all_btn.pack(side="left", padx=5)
-
-        # Botão "Desmarcar todos"
-        self.unmark_all_btn = ttk.Button(
-            buttons_frame, 
-            text="Desmarcar Todos",
-            command=self.unmark_all_layouts
-        )
-        self.unmark_all_btn.pack(side="left", padx=5)
-
-        # Individual layout checkboxes
-        layouts_grid = ttk.Frame(layouts_frame)
-        layouts_grid.pack(fill="x", padx=20, pady=(0, 5))
-        
-        self.circular_check = ttk.Checkbutton(layouts_grid, text="Circular", variable=self.circular_layout)
-        self.circular_check.grid(row=0, column=0, padx=10, pady=5, sticky="w")
-        
-        self.organic_check = ttk.Checkbutton(layouts_grid, text="Orgânico", variable=self.organic_layout)
-        self.organic_check.grid(row=0, column=1, padx=10, pady=5, sticky="w")
-        
-        self.geographic_check = ttk.Checkbutton(layouts_grid, text="Geográfico", variable=self.geographic_layout)
-        self.geographic_check.grid(row=0, column=2, padx=10, pady=5, sticky="w")
-        
-        self.hierarchical_check = ttk.Checkbutton(layouts_grid, text="Hierárquico", variable=self.hierarchical_layout)
-        self.hierarchical_check.grid(row=0, column=3, padx=10, pady=5, sticky="w")
-        
-        # Frame de ação
-        action_frame = ttk.Frame(scrollable_frame)
-        action_frame.grid(row=4, column=0, columnspan=3, sticky="we", padx=5, pady=20)
-        
-        # Botão de geração
-        generate_btn = ttk.Button(action_frame, text="Gerar Topologias", command=self.generate_topologies,
-                                 style="Accent.TButton")
-        generate_btn.pack(pady=10, ipadx=20, ipady=10)
-
-        # Botão de Ajuda (adicionar após o título)
         help_btn = ttk.Button(
-            scrollable_frame, 
+            header_frame, 
             text="Ajuda", 
             command=self.show_help,
-            style="Help.TButton"
+            style="Help.TButton",
+            width=8
         )
-        help_btn.grid(row=5, column=2, sticky="ne", padx=10, pady=(0, 15)) 
- 
-        # Barra de status
+        help_btn.pack(side="right")
+
+        # ========= STATUS DE RECURSOS =========
+        status_frame = ttk.LabelFrame(
+            scrollable_frame, 
+            text="Status de Recursos",
+            style="Section.TLabelframe"
+        )
+        status_frame.grid(row=1, column=0, columnspan=2, sticky="we", padx=5, pady=5)
+        status_frame.columnconfigure(1, weight=1)
+
+        # Configurar colunas para alinhamento
+        for i in range(3):
+            status_frame.columnconfigure(i, weight=1 if i == 1 else 0)
+
+        # Status dos arquivos
+        ttk.Label(status_frame, text="config.json:").grid(row=0, column=0, sticky="w", padx=(10, 5), pady=2)
+        config_status = ttk.Label(
+            status_frame, 
+            text="✔ Disponível" if self.has_config else "❌ Não encontrado", 
+            foreground="green" if self.has_config else "red"
+        )
+        config_status.grid(row=0, column=1, sticky="w", padx=5, pady=2)
+        ttk.Label(status_frame, text="(Personalização avançada)").grid(row=0, column=2, sticky="w", padx=(0, 10), pady=2)
+        
+        ttk.Label(status_frame, text="elementos.csv:").grid(row=1, column=0, sticky="w", padx=(10, 5), pady=2)
+        elementos_status = ttk.Label(
+            status_frame, 
+            text="✔ Disponível" if self.has_elementos else "⚠ Opcional não encontrado", 
+            foreground="green" if self.has_elementos else "orange"
+        )
+        elementos_status.grid(row=1, column=1, sticky="w", padx=5, pady=2)
+        ttk.Label(status_frame, text="(Dados dos equipamentos)").grid(row=1, column=2, sticky="w", padx=(0, 10), pady=2)
+        
+        ttk.Label(status_frame, text="localidades.csv:").grid(row=2, column=0, sticky="w", padx=(10, 5), pady=2)
+        localidades_status = ttk.Label(
+            status_frame, 
+            text="✔ Disponível" if self.has_localidades else "⚠ Opcional não encontrado", 
+            foreground="green" if self.has_localidades else "orange"
+        )
+        localidades_status.grid(row=2, column=1, sticky="w", padx=5, pady=2)
+        ttk.Label(status_frame, text="(Dados geográficos)").grid(row=2, column=2, sticky="w", padx=(0, 10), pady=2)
+
+        # ========= ARQUIVOS DE ENTRADA =========
+        files_frame = ttk.LabelFrame(
+            scrollable_frame, 
+            text="Arquivos de Entrada",
+            style="Section.TLabelframe"
+        )
+        files_frame.grid(row=2, column=0, columnspan=2, sticky="we", padx=5, pady=10)
+        
+        # Conexões (obrigatório)
+        conn_frame = ttk.Frame(files_frame)
+        conn_frame.pack(fill="x", padx=5, pady=5)
+        ttk.Label(conn_frame, text="Arquivo(s) de Conexões*:").pack(side="left", padx=(0, 10))
+        ttk.Button(conn_frame, text="Selecionar...", command=self.select_connection_files).pack(side="left", padx=(0, 10))
+        self.connections_label = ttk.Label(conn_frame, text="Nenhum selecionado", foreground="gray", wraplength=350)
+        self.connections_label.pack(side="left", fill="x", expand=True)
+        
+        # Elementos (opcional)
+        elem_frame = ttk.Frame(files_frame)
+        elem_frame.pack(fill="x", padx=5, pady=5)
+        ttk.Label(elem_frame, text="Arquivo de Elementos:").pack(side="left", padx=(0, 10))
+        ttk.Button(elem_frame, text="Selecionar...", command=self.select_elementos_file).pack(side="left", padx=(0, 10))
+        self.elementos_label = ttk.Label(
+            elem_frame, 
+            text=self.elementos_file if self.elementos_file else "Padrão (elementos.csv)", 
+            foreground="blue", 
+            wraplength=350
+        )
+        self.elementos_label.pack(side="left", fill="x", expand=True)
+        
+        # Localidades (opcional)
+        loc_frame = ttk.Frame(files_frame)
+        loc_frame.pack(fill="x", padx=5, pady=(5, 10))
+        ttk.Label(loc_frame, text="Arquivo de Localidades:").pack(side="left", padx=(0, 10))
+        ttk.Button(loc_frame, text="Selecionar...", command=self.select_localidades_file).pack(side="left", padx=(0, 10))
+        self.localidades_label = ttk.Label(
+            loc_frame, 
+            text=self.localidades_file if self.localidades_file else "Padrão (localidades.csv)", 
+            foreground="blue", 
+            wraplength=350
+        )
+        self.localidades_label.pack(side="left", fill="x", expand=True)
+
+        # ========= OPÇÕES DE GERAÇÃO =========
+        options_frame = ttk.LabelFrame(
+            scrollable_frame, 
+            text="Opções de Geração",
+            style="Section.TLabelframe"
+        )
+        options_frame.grid(row=3, column=0, columnspan=2, sticky="we", padx=5, pady=10)
+        
+        # Coluna 1 - Opções principais
+        col1_frame = ttk.Frame(options_frame)
+        col1_frame.pack(side="left", fill="both", expand=True, padx=10, pady=5)
+        
+        self.orphans_check = ttk.Checkbutton(
+            col1_frame, 
+            text="Incluir elementos sem conexões", 
+            variable=self.include_orphans
+        )
+        self.orphans_check.pack(anchor="w", padx=5, pady=5)
+        
+        self.regional_check = ttk.Checkbutton(
+            col1_frame, 
+            text="Regionalização das camadas", 
+            variable=self.regionalization
+        )
+        self.regional_check.pack(anchor="w", padx=5, pady=5)
+        
+        self.ignore_optional_check = ttk.Checkbutton(
+            col1_frame, 
+            text="Ignorar customizações dos CSVs", 
+            variable=self.ignore_optional
+        )
+        self.ignore_optional_check.pack(anchor="w", padx=5, pady=5)
+        
+        self.logs_check = ttk.Checkbutton(
+            col1_frame, 
+            text="Gerar arquivo de logs", 
+            variable=self.generate_logs
+        )
+        self.logs_check.pack(anchor="w", padx=5, pady=5)
+        
+        # Coluna 2 - Opções de visualização
+        col2_frame = ttk.Frame(options_frame)
+        col2_frame.pack(side="right", fill="both", expand=True, padx=10, pady=5)
+        
+        self.hide_names_check = ttk.Checkbutton(
+            col2_frame, 
+            text="Ocultar nomes dos nós", 
+            variable=self.hide_node_names
+        )
+        self.hide_names_check.pack(anchor="w", padx=5, pady=5)
+        
+        self.hide_conn_check = ttk.Checkbutton(
+            col2_frame, 
+            text="Ocultar camadas de conexão", 
+            variable=self.hide_connection_layers
+        )
+        self.hide_conn_check.pack(anchor="w", padx=5, pady=5)
+        
+        # ========= FILTROS =========
+        filters_frame = ttk.LabelFrame(
+            scrollable_frame, 
+            text="Filtros Avançados",
+            style="Section.TLabelframe"
+        )
+        filters_frame.grid(row=7, column=0, columnspan=2, sticky="we", padx=5, pady=10)
+
+        # Grupo de radiobuttons
+        filter_type_frame = ttk.Frame(filters_frame)
+        filter_type_frame.pack(fill="x", padx=10, pady=(10, 5))
+
+        ttk.Label(filter_type_frame, text="Tipo de filtro:").pack(side="left", padx=(0, 15))
+
+        filter_types = [
+            ("Nenhum filtro", "none"),
+            ("Incluir elementos (in)", "in"),
+            ("Remover elementos (rn)", "rn"),
+            ("Incluir camadas (ic)", "ic"),
+            ("Remover camadas (rc)", "rc")
+        ]
+
+        # Organizar em 2 colunas
+        cols_frame = ttk.Frame(filter_type_frame)
+        cols_frame.pack(side="left", fill="x", expand=True)
+        
+        col1 = ttk.Frame(cols_frame)
+        col1.pack(side="left", fill="x", expand=True, padx=5)
+        col2 = ttk.Frame(cols_frame)
+        col2.pack(side="left", fill="x", expand=True, padx=5)
+        
+        for i, (text, value) in enumerate(filter_types):
+            col = col1 if i < 3 else col2
+            rb = ttk.Radiobutton(
+                col,
+                text=text,
+                variable=self.filter_type,
+                value=value,
+                command=self.update_filter_state
+            )
+            rb.pack(anchor="w", padx=5, pady=2)
+
+        # Campo para valor do filtro
+        filter_value_frame = ttk.Frame(filters_frame)
+        filter_value_frame.pack(fill="x", padx=10, pady=(0, 10))
+
+        ttk.Label(filter_value_frame, text="Valores (separados por ;):").pack(side="left", padx=(0, 10))
+
+        self.filter_entry = ttk.Entry(
+            filter_value_frame, 
+            textvariable=self.filter_value,
+            width=40,
+            state="disabled"
+        )
+        self.filter_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+
+        # ========= LAYOUTS =========
+        layouts_frame = ttk.LabelFrame(
+            scrollable_frame, 
+            text="Layouts de Saída",
+            style="Section.TLabelframe"
+        )
+        layouts_frame.grid(row=5, column=0, columnspan=2, sticky="we", padx=5, pady=10)
+
+        # Controles de seleção em massa
+        ctrl_frame = ttk.Frame(layouts_frame)
+        ctrl_frame.pack(fill="x", padx=10, pady=(5, 0))
+        
+        ttk.Label(ctrl_frame, text="Seleção:").pack(side="left", padx=(0, 10))
+        
+        self.mark_all_btn = ttk.Button(
+            ctrl_frame, 
+            text="Marcar Todos",
+            command=self.mark_all_layouts,
+            width=14
+        )
+        self.mark_all_btn.pack(side="left", padx=(0, 5))
+        
+        self.unmark_all_btn = ttk.Button(
+            ctrl_frame, 
+            text="Desmarcar Todos",
+            command=self.unmark_all_layouts,
+            width=18
+        )
+        self.unmark_all_btn.pack(side="left")
+
+        # Checkboxes individuais organizados horizontalmente
+        checks_frame = ttk.Frame(layouts_frame)
+        checks_frame.pack(fill="x", padx=20, pady=10)
+        
+        self.circular_check = ttk.Checkbutton(
+            checks_frame, 
+            text="Circular", 
+            variable=self.circular_layout
+        )
+        self.circular_check.pack(side="left", padx=20, pady=5)
+        
+        self.organic_check = ttk.Checkbutton(
+            checks_frame, 
+            text="Orgânico", 
+            variable=self.organic_layout
+        )
+        self.organic_check.pack(side="left", padx=20, pady=5)
+        
+        self.geographic_check = ttk.Checkbutton(
+            checks_frame, 
+            text="Geográfico", 
+            variable=self.geographic_layout
+        )
+        self.geographic_check.pack(side="left", padx=20, pady=5)
+        
+        self.hierarchical_check = ttk.Checkbutton(
+            checks_frame, 
+            text="Hierárquico", 
+            variable=self.hierarchical_layout
+        )
+        self.hierarchical_check.pack(side="left", padx=20, pady=5)
+
+        # ========= AÇÃO PRINCIPAL =========
+        action_frame = ttk.Frame(scrollable_frame)
+        action_frame.grid(row=6, column=0, columnspan=2, sticky="we", padx=5, pady=1)
+        
+        # Botão de geração centralizado
+        generate_btn = ttk.Button(
+            action_frame, 
+            text="Gerar Topologias", 
+            command=self.generate_topologies,
+            style="Accent.TButton",
+            width=50
+        )
+        generate_btn.pack(pady=10, ipadx=10, ipady=8)
+
+        # ========= BARRA DE STATUS =========
         self.status_var = tk.StringVar(value="Pronto para gerar topologias")
-        status_bar = ttk.Label(self.root, textvariable=self.status_var, relief="sunken", anchor="w")
+        status_bar = ttk.Label(
+            self.root, 
+            textvariable=self.status_var, 
+            relief="sunken", 
+            anchor="w",
+            padding=(10, 5)
+        )
         status_bar.pack(side="bottom", fill="x")
         
-        # Estilo para o botão principal
-        style = ttk.Style()
-        style.configure("Accent.TButton", font=("Arial", 10, "bold"), foreground="#00008B", background="#036897")
-        
-        # Estilo para botão de ajuda
-        style.configure("Help.TButton", 
-                        font=("Arial", 10, "bold"), 
-                        foreground="#000000",
-                        background="#FF8C00")
+        # Atualizar estado inicial
+        self.update_ui_state()
+        self.update_filter_state()
+        canvas.bind("<Motion>", lambda e: canvas.focus_set())  # Melhora resposta ao touchpad
+
+    
+    # Adicione este novo método na classe:
+    def update_filter_state(self):
+        """Atualiza o estado do campo de entrada baseado no tipo de filtro"""
+        if self.filter_type.get() != "none":
+            self.filter_entry.config(state="normal")
+        else:
+            self.filter_entry.config(state="disabled")
+            self.filter_value.set("")                        
 
     def show_help(self):
         """Exibe janela de ajuda com conteúdo completo"""
@@ -638,7 +880,17 @@ class TopologyGUI:
                    self.geographic_layout.get(), self.hierarchical_layout.get()]):
             messagebox.showerror("Erro", "Selecione pelo menos um tipo de layout!")
             return
-            
+
+        # Obter configuração de filtro ANTES do loop
+        filter_str = None
+        if self.filter_type.get() != "none":
+            filter_value = self.filter_value.get().strip()
+            if not filter_value:
+                messagebox.showwarning("Aviso", "Filtro selecionado mas sem valores definidos!")
+                return
+            filter_str = f"{self.filter_type.get()}:{filter_value}" 
+
+ 
         # Configurar logging se necessário
         if self.generate_logs.get():
             log_file = f'topologia_gui_log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
@@ -712,7 +964,8 @@ class TopologyGUI:
                     self.localidades_file,
                     hide_node_names,          # Corrigido
                     hide_connection_layers,    # Corrigido
-                    ignore_optional=self.ignore_optional.get()
+                    ignore_optional=self.ignore_optional.get(),
+                    filter_string=filter_str
                 )
                 if not result:
                     success = False
@@ -731,10 +984,29 @@ class TopologyGUI:
             
         # Log final de memória
         log_memory_usage("Final do processamento")
+        
+        
+
+        # Passar filter_str para process_single_file
+        result = self.process_single_file(
+            file, 
+            config, 
+            self.include_orphans.get(), 
+            layouts, 
+            self.regionalization.get(),
+            self.elementos_file,
+            self.localidades_file,
+            hide_node_names,          
+            hide_connection_layers,    
+            ignore_optional=self.ignore_optional.get(),
+            filter_string=filter_str  # Nova opção
+        )
+
 
     def process_single_file(self, conexoes_file, config, include_orphans, layouts_choice, 
                             regionalization, elementos_file, localidades_file, 
-                            hide_node_names, hide_connection_layers, ignore_optional):
+                            hide_node_names, hide_connection_layers, ignore_optional,
+                            filter_string=None):
         """Processa um arquivo de conexões completo"""
         file_start = time.perf_counter()
         logger.info("⏱️ [INICIO] Processando arquivo: %s", conexoes_file)
@@ -751,9 +1023,10 @@ class TopologyGUI:
                 include_orphans=include_orphans, 
                 regionalization=regionalization,
                 localidades_file=localidades_file,
-                hide_node_names=hide_node_names,            # Nova opção
-                hide_connection_layers=hide_connection_layers, # Nova opção
-                ignore_optional=ignore_optional
+                hide_node_names=hide_node_names,
+                hide_connection_layers=hide_connection_layers,
+                ignore_optional=ignore_optional,
+                filter_string=filter_string
             )
             
             if not generator.valid:
@@ -2859,3 +3132,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
