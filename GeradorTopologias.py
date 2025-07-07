@@ -25,7 +25,7 @@ from collections import defaultdict
 import platform
 import glob
 
-versionctr = "vA1.21"
+versionctr = "vA1.24"
 
 # Tente importar psutil para monitoramento de memória, mas não é obrigatório
 PSUTIL_AVAILABLE = False
@@ -60,6 +60,7 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir da
 • Regionalização automática (ex: CORE -> CORE_SUDESTE)
 • Interface gráfica (GUI) e linha de comando (CLI)
 • Suporte a mapas de fundo (background images)
+• Filtragem avançada de elementos/camadas
 
 🚀 COMO USAR:
 ------------
@@ -87,6 +88,13 @@ Ferramenta para geração automática de diagramas de rede (.drawio) a partir da
               c = ocultar camadas de conexão
               Ex: -o nc → ativa ambas opções
   -d          Ignorar customizações nos CSVs (usar apenas config.json)
+  -f FILTRO   Filtro para selecionar elementos/camadas:
+              in = incluir somente elementos que iniciam com os filtros
+              rn = remover elementos que iniciam com os filtros
+              ic = incluir somente camadas que iniciam com os filtros
+              rc = remover camadas que iniciam com os filtros
+              Ex: -f "in:RTIC;RTOC" → somente elementos começando com RTIC ou RTOC
+              Ex: -f "rc:METRO;INNER" → remove elementos das camadas METRO ou INNER
   -h          Mostra esta ajuda
 
 📂 ARQUIVOS DE ENTRADA:
@@ -175,6 +183,12 @@ Controle completo da aparência e comportamento das topologias:
 
 3. Ativando logs e regionalização:
    python GeradorTopologias.py -l -r -t co campus_sp.csv
+
+4. Filtrando elementos específicos:
+   python GeradorTopologias.py -f "in:RTIC;RTOC" -t c backbone.csv
+
+5. Removendo camadas específicas:
+   python GeradorTopologias.py -f "rc:METRO;ACCESS" -t o campus.csv
 
 ⚠️ SOLUÇÃO DE PROBLEMAS COMUNS:
 -------------------------------
@@ -875,7 +889,7 @@ class TopologyGenerator:
     def __init__(self, elementos_file, conexoes_file, config, include_orphans=False, 
                  regionalization=False, localidades_file='localidades.csv',
                  hide_node_names=False, hide_connection_layers=False,
-                 ignore_optional=False):
+                 ignore_optional=False, filter_string=None):
         self.elementos_file = elementos_file
         self.conexoes_file = conexoes_file
         self.config = config
@@ -893,16 +907,75 @@ class TopologyGenerator:
         self.localidades_map = self._load_localidades()
         self.has_geographic_data = False
         self.nodes_without_siteid = []  # Nova lista para nós sem siteid
-        self.ignore_optional = ignore_optional 
-        
-        # Novas opções de visualização
+        self.ignore_optional = ignore_optional
+        self.filter_string = filter_string
         self.hide_node_names = hide_node_names
         self.hide_connection_layers = hide_connection_layers
         logger.info(f"Opções: hide_node_names={hide_node_names}, hide_connection_layers={hide_connection_layers}")
         
         self._initialize() 
         logger.info("Inicialização concluída")
-    
+        
+    def apply_filters(self):
+        """Aplica filtros aos nós e conexões com base no filter_string"""
+        if not self.filter_string:
+            return
+            
+        logger.info(f"Aplicando filtro: {self.filter_string}")
+        filter_type, filter_list = self.filter_string.split(':', 1)
+        filters = [f.strip() for f in filter_list.split(';') if f.strip()]
+        
+        # Criar cópias para iteração segura
+        all_nodes = list(self.nodes.keys())
+        all_connections = list(self.connections)
+        
+        # Filtragem de nós
+        nodes_to_remove = set()
+        for node in all_nodes:
+            node_data = self.nodes[node]
+            camada = node_data['camada']
+            
+            if filter_type == 'in':  # Filtrar INclusão de Nós
+                if not any(node.startswith(f) for f in filters):
+                    nodes_to_remove.add(node)
+                    
+            elif filter_type == 'rn':  # Filtrar Remoção de Nós
+                if any(node.startswith(f) for f in filters):
+                    nodes_to_remove.add(node)
+                    
+            elif filter_type == 'ic':  # Filtrar INclusão de Camadas
+                if not any(camada.startswith(f) for f in filters):
+                    nodes_to_remove.add(node)
+                    
+            elif filter_type == 'rc':  # Filtrar Remoção de Camadas
+                if any(camada.startswith(f) for f in filters):
+                    nodes_to_remove.add(node)
+        
+        # Remover nós marcados
+        for node in nodes_to_remove:
+            # Remover nó das estruturas
+            if node in self.nodes:
+                del self.nodes[node]
+            if node in self.node_ids:
+                del self.node_ids[node]
+            
+            # Remover das camadas
+            for layer in list(self.layers.keys()):
+                if node in self.layers[layer]:
+                    self.layers[layer].remove(node)
+                    if not self.layers[layer]:  # Remover camada vazia
+                        del self.layers[layer]
+                        del self.layer_ids[layer]
+        
+        # Filtrar conexões que envolvem nós removidos
+        self.connections = [
+            conn for conn in all_connections
+            if conn['origem'] not in nodes_to_remove and conn['destino'] not in nodes_to_remove
+        ]
+        
+        logger.info(f"Filtro aplicado: {len(nodes_to_remove)} nós removidos, "
+                  f"{len(all_connections) - len(self.connections)} conexões removidas")    
+
     def _dms_to_decimal(self, dms_str, coord_type, site_id):
         """
         Converte coordenadas DMS para decimal com tratamento robusto
@@ -1968,6 +2041,10 @@ class TopologyGenerator:
         """
         Gera arquivo draw.io com o layout especificado
         """
+        # Aplicar filtros antes de calcular posições
+        if self.filter_string:
+            self.apply_filters()
+            
         logger.info("🖼️ Gerando diagrama: %s", output_file)
         gen_start = time.perf_counter()
         
@@ -2020,9 +2097,9 @@ class TopologyGenerator:
 
             # Gerar cada página definida no config
             for page_def in self.config["PAGE_DEFINITIONS"]:
-                logger.info("Gerando página: %s", page_def["name"])
                 page_content = self._generate_page(page_def, positions, layout_type, scale_factor, locked)
-                content.append(page_content)
+                if page_content is not None:  # Adicionar apenas páginas não vazias
+                    content.append(page_content)
                 
             content.append(DRAWIO_FOOTER)
             
@@ -2060,7 +2137,8 @@ class TopologyGenerator:
             page_name=page_def["name"],
             diagram_id=str(uuid.uuid4())
         )
-        
+        node_count = 0
+        connection_count = 0
         page_content = [diagram_content]
         visible_layers = set(self.layers.keys()) if page_def["visible_layers"] is None else set(page_def["visible_layers"])
 
@@ -2136,7 +2214,7 @@ class TopologyGenerator:
             if (conn['origem'] in generated_nodes and conn['destino'] in generated_nodes):
                 key = frozenset([conn['origem'], conn['destino']])
                 connection_counts[key] += 1
-
+            connection_count += 1
         # 2. Manter o controle do índice da conexão atual que estamos desenhando
         connection_indices = defaultdict(int)
         
@@ -2224,6 +2302,7 @@ class TopologyGenerator:
             apelido = data.get('apelido', '')  # Obter apelido se existir
             style = self._get_node_style(data, scale_factor)
             x, y = positions[node]
+            node_count += 1
             
             # Usar apelido se disponível, senão usar nome original
             label = ""
@@ -2350,7 +2429,11 @@ class TopologyGenerator:
         page_content.append("      </root>")
         page_content.append("    </mxGraphModel>")
         page_content.append("  </diagram>")
-                       
+        
+        # Verificar se a página está vazia
+        if node_count == 0 and connection_count == 0:
+            logger.info(f"Página '{page_def['name']}' está vazia e será omitida.")
+            return None               
         return '\n'.join(page_content)
 
 # =====================================================
@@ -2365,7 +2448,8 @@ def run_gui():
 def process_file(conexoes_file, config, include_orphans=False, layouts_choice="cog", 
                 regionalization=False, elementos_file='elementos.csv', 
                 localidades_file='localidades.csv', hide_node_names=False, 
-                hide_connection_layers=False, ignore_optional=False):
+                hide_connection_layers=False, ignore_optional=False,
+                filter_string=None):
     """
     Processa um arquivo de conexões completo
     
@@ -2394,7 +2478,8 @@ def process_file(conexoes_file, config, include_orphans=False, layouts_choice="c
             localidades_file,
             hide_node_names,
             hide_connection_layers,
-            ignore_optional=ignore_optional
+            ignore_optional=ignore_optional,
+            filter_string=filter_string
         )
         
         if not generator.valid:
@@ -2545,6 +2630,13 @@ def main():
      default='config.json',
      help='Caminho para o arquivo de configuração (padrão: config.json)'
     )
+    
+    parser.add_argument(
+        '-f',
+        metavar='FILTRO',
+        default=None,
+        help='Filtrar nós/camadas: in/rn/ic/rc "filtro1;filtro2"'
+    )    
     
     # Tentar analisar os argumentos
     try:
@@ -2745,7 +2837,8 @@ def main():
             localidades_file,
             hide_node_names,
             hide_connection_layers,
-            ignore_optional=args.d
+            ignore_optional=args.d,
+            filter_string=args.f
         ))
     
     # Relatório final de execução
