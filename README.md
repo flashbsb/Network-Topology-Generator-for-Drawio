@@ -40,33 +40,6 @@ Ferramenta para geração automatizada de diagramas de rede (.drawio) a partir d
 python -m pip install networkx chardet numpy pillow psutil
 ```
 
-## Criar atalho no Windows para abrir a interface gráfica diretamente (Opcional)
-
-### **Passo a Passo:**
-1. **Crie um novo atalho:**
-   - Clique com o botão direito do mouse em uma área vazia da área de trabalho.
-   - Selecione **Novo** > **Atalho**.
-
-2. **Defina o comando:**
-   - No campo **"Digite o local do item"**, insira:
-     ```cmd
-     cmd.exe /c python "c:\caminho\GeradorTopologias.py" & pause
-     ```
-     - Explicação:
-       - `cmd.exe /c`: Abre o prompt de comando para executar o script.
-       - `pause`: Mantém a janela aberta após a execução (útil para ver erros).  
-       *(Remova `& pause` se não quiser que a janela permaneça aberta)*.
-
-3. **Nomeie o atalho:**
-   - Dê um nome (ex: `GeradorTopologias`) e clique em **Concluir**.
-
-4. **Altere o ícone (opcional):**
-   - Clique com o botão direito no atalho > **Propriedades**.
-   - Na aba **Atalho**, clique em **Alterar Ícone...**.
-   - Procure ícones em:
-     - `C:\Windows\System32\SHELL32.dll`
-     - Ou use um arquivo `.ico` personalizado.
-
 # Linux (Debian/Ubuntu)
 1. Instalar Python 3 e pip (apt):
 ```bash
@@ -78,6 +51,11 @@ python3 -m pip install networkx chardet numpy pillow psutil
 ```
 
 ## 🚀 Como Usar
+
+### Faça o download
+- GeradorTopologias.py
+- config.json
+- RunGui.bat (opcional, script para windows que executa a GUI diretamente)
 
 ### Modo Gráfico (GUI)
 ```bash
