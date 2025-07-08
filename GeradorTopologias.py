@@ -987,22 +987,6 @@ class TopologyGUI:
         
         
 
-        # Passar filter_str para process_single_file
-        result = self.process_single_file(
-            file, 
-            config, 
-            self.include_orphans.get(), 
-            layouts, 
-            self.regionalization.get(),
-            self.elementos_file,
-            self.localidades_file,
-            hide_node_names,          
-            hide_connection_layers,    
-            ignore_optional=self.ignore_optional.get(),
-            filter_string=filter_str  # Nova opção
-        )
-
-
     def process_single_file(self, conexoes_file, config, include_orphans, layouts_choice, 
                             regionalization, elementos_file, localidades_file, 
                             hide_node_names, hide_connection_layers, ignore_optional,
