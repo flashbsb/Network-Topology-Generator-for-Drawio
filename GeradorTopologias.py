@@ -25,7 +25,7 @@ from collections import defaultdict
 import platform
 import glob
 
-versionctr = "beta 1.28"
+versionctr = "B1.28"
 
 # Tente importar psutil para monitoramento de memória, mas não é obrigatório
 PSUTIL_AVAILABLE = False
