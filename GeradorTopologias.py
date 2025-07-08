@@ -25,7 +25,7 @@ from collections import defaultdict
 import platform
 import glob
 
-versionctr = "B1.28"
+versionctr = "B1.29"
 
 # Tente importar psutil para monitoramento de memória, mas não é obrigatório
 PSUTIL_AVAILABLE = False
@@ -2471,7 +2471,6 @@ class TopologyGenerator:
             if (conn['origem'] in generated_nodes and conn['destino'] in generated_nodes):
                 key = frozenset([conn['origem'], conn['destino']])
                 connection_counts[key] += 1
-            connection_count += 1
         # 2. Manter o controle do índice da conexão atual que estamos desenhando
         connection_indices = defaultdict(int)
         
@@ -2485,7 +2484,7 @@ class TopologyGenerator:
                 conn['origem'] not in self.node_ids or
                 conn['destino'] not in self.node_ids):
                 continue
-            
+            connection_count += 1
             # --- INÍCIO DA MODIFICAÇÃO ---
             origem_node = conn['origem']
             destino_node = conn['destino']
