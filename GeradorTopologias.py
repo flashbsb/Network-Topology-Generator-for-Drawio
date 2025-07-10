@@ -18,14 +18,12 @@ import networkx as nx
 import time
 import random
 import argparse
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk, scrolledtext
 from datetime import datetime
 from collections import defaultdict
 import platform
 import glob
 
-versionctr = "B1.29"
+versionctr = "B1.30"
 
 # Tente importar psutil para monitoramento de memória, mas não é obrigatório
 PSUTIL_AVAILABLE = False
@@ -249,148 +247,103 @@ DRAWIO_FOOTER = """
 </mxfile>
 """
 
-# =====================================================
-# GUI IMPLEMENTATION
-# =====================================================
 
-class TopologyGUI:
-    def __init__(self, root):
-        self.root = root
-        self.root.title(f"Gerador de Topologias de Rede para o Drawio - {versionctr}") 
-        self.root.geometry("550x800")
-        self.root.resizable(True, True)
-        
-        # Configurações padrão
-        self.config = self.load_config()
-        self.connection_files = []
-        self.elementos_file = "elementos.csv" if os.path.exists("elementos.csv") else ""
-        self.localidades_file = "localidades.csv" if os.path.exists("localidades.csv") else ""
-        
-        # Variáveis de controle
-        self.include_orphans = tk.BooleanVar(value=False)
-        self.regionalization = tk.BooleanVar(value=False)
-        self.circular_layout = tk.BooleanVar(value=True)
-        self.organic_layout = tk.BooleanVar(value=False)
-        self.geographic_layout = tk.BooleanVar(value=False)
-        self.hierarchical_layout = tk.BooleanVar(value=False)
-        self.generate_logs = tk.BooleanVar(value=False)
-        self.ignore_optional = tk.BooleanVar(value=False)
-        self.hide_connection_layers = tk.BooleanVar(value=False)
-        self.hide_node_names = tk.BooleanVar(value=False)
-        
-        # Inicialização das variáveis de filtro (CORREÇÃO ADICIONADA)
-        self.filter_type = tk.StringVar(value="none")  # "none", "in", "rn", "ic", "rc"
-        self.filter_value = tk.StringVar()
-        
-        # Verificar disponibilidade de recursos
-        self.has_elementos = os.path.exists("elementos.csv")
-        self.has_localidades = os.path.exists("localidades.csv")
-        self.has_config = os.path.exists("config.json")
-        
-        # Criar interface
-        self.create_widgets()
-        
-        # Atualizar estado inicial dos controles
-        self.update_ui_state()
-        
-        # Adicionar referência ao texto de ajuda
-        self.help_text = HELP_TEXT
-        
-    def load_config(self):
-        """Tenta carregar o config.json ou retorna padrão se não existir"""
-        config_file = 'config.json'
-        default_config = {
-            "LAYER_STYLES": {},
-            "LAYER_COLORS": {"default": "#036897"},
-            "PAGE_DEFINITIONS": [{"name": "VISÃO GERAL", "visible_layers": None}],
-            "CIRCULAR_LAYOUT": {"center_x": 500, "center_y": 500, "base_radius": 100, "radius_increment": 50},
-            "ORGANIC_LAYOUT": {"k_base": 0.25, "k_min": 0.8, "k_max": 2.5, "iterations_per_node": 10},
-            "GEOGRAPHIC_LAYOUT": {"canvas_width": 1000, "canvas_height": 800, "margin": 50, "min_distance": 30},
-            "NODE_STYLE": {"shape": "mxgraph.cisco.routers.router", "fillColor": "#ffffff", "strokeColor": "#000000"},
-            "CONNECTION_STYLE_BASE": {"edgeStyle": "orthogonalEdgeStyle", "curved": "0", "rounded": "0"},
-            "CONNECTION_STYLES": {"default": {"color": "#000000", "strokeWidth": "2"}},
-            "LEGEND_CONFIG": {"position": {"x": 50, "y": 30}, "item_spacing": 40}
-        }
-        
-        try:
-            if os.path.exists(config_file):
-                with open(config_file, 'r') as f:
-                    config = json.load(f)
-                
-                # Logar informações da configuração
-                logger.debug("⚙️ Configurações carregadas:")
-                logger.debug("  - Páginas: %s", [p['name'] for p in config["PAGE_DEFINITIONS"]])
-                logger.debug("  - Cores de camada: %s", list(config["LAYER_COLORS"].keys()))
-                
-                # Logar parâmetros de layout
-                for layout in ["CIRCULAR_LAYOUT", "ORGANIC_LAYOUT", "GEOGRAPHIC_LAYOUT", "HIERARCHICAL_LAYOUT"]:
-                    if layout in config:
-                        logger.debug("  - %s: %s", layout, json.dumps(config[layout], indent=2))
-                
-                return config
-            return default_config
-        except Exception as e:
-            logger.exception("Erro ao carregar configuração", exc_info=True)
-            return default_config
-
-    def _on_mousewheel(self, event, canvas):
-        """Manipula eventos de rolagem do mouse para o canvas"""
-        if sys.platform.startswith('linux'):
-            if event.num == 4:  # Roda para cima
-                canvas.yview_scroll(-1, "units")
-            elif event.num == 5: # Roda para baixo
-                canvas.yview_scroll(1, "units")
-        else:
-            # Windows e macOS
-            delta = event.delta
-            if sys.platform == "darwin":  # Ajuste para macOS
-                delta = -delta
-                
-            if delta > 0:
-                canvas.yview_scroll(-1, "units")
-            else:
-                canvas.yview_scroll(1, "units")
-
-    def create_widgets(self):
-        # Configurar estilo
-        style = ttk.Style()
-        style.configure("Title.TLabel", font=("Arial", 16, "bold"), foreground="#036897")
-        style.configure("Section.TLabelframe.Label", font=("Arial", 10, "bold"), foreground="#036897")
-        style.configure("Accent.TButton", font=("Arial", 10, "bold"), foreground="#000000", background="#036897")
-        style.configure("Help.TButton", font=("Arial", 10, "bold"), foreground="#000000", background="#FF8C00")
-
-        # Frame principal com scrollbar - CORREÇÃO DO SCROLL
-        main_frame = ttk.Frame(self.root)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-        # Canvas e scrollbar
-        canvas = tk.Canvas(main_frame, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        # Configurar sistema de scroll
-        def _configure_canvas(e):
-            # Atualiza a região de scroll e força redimensionamento
-            canvas.configure(scrollregion=canvas.bbox("all"))
-            canvas.yview_moveto(0)  # Mantém no topo ao redimensionar
-        scrollable_frame.bind("<Configure>", _configure_canvas)
-
-        # Criar janela no canvas para o frame interno
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-
-        # Configurar scrollbar
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        # Permitir que o frame interno expanda com o conteúdo
-        scrollable_frame.bind("<Configure>", 
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+def run_gui():
+    # IMPORTE E DEFINA TUDO RELACIONADO À GUI AQUI DENTRO
+    import tkinter as tk
+    from tkinter import filedialog, messagebox, ttk, scrolledtext
+    from collections import defaultdict
+    import platform
+    import json
+    import os
+    import sys
+    from datetime import datetime
+    
+    # =====================================================
+    # GUI IMPLEMENTATION
+    # =====================================================
+    
+    class TopologyGUI:
+        def __init__(self, root):
+            self.root = root
+            self.root.title(f"Gerador de Topologias de Rede para o Drawio - {versionctr}") 
+            self.root.geometry("550x800")
+            self.root.resizable(True, True)
             
-        # Configurar expansão do grid
-        scrollable_frame.grid_rowconfigure(0, weight=1)
-        scrollable_frame.grid_columnconfigure(0, weight=1)
-
-        # Função aprimorada para rolagem
-        def _on_mousewheel(event, canvas):
+            # Configurações padrão
+            self.config = self.load_config()
+            self.connection_files = []
+            self.elementos_file = "elementos.csv" if os.path.exists("elementos.csv") else ""
+            self.localidades_file = "localidades.csv" if os.path.exists("localidades.csv") else ""
+            
+            # Variáveis de controle
+            self.include_orphans = tk.BooleanVar(value=False)
+            self.regionalization = tk.BooleanVar(value=False)
+            self.circular_layout = tk.BooleanVar(value=True)
+            self.organic_layout = tk.BooleanVar(value=False)
+            self.geographic_layout = tk.BooleanVar(value=False)
+            self.hierarchical_layout = tk.BooleanVar(value=False)
+            self.generate_logs = tk.BooleanVar(value=False)
+            self.ignore_optional = tk.BooleanVar(value=False)
+            self.hide_connection_layers = tk.BooleanVar(value=False)
+            self.hide_node_names = tk.BooleanVar(value=False)
+            
+            # Inicialização das variáveis de filtro (CORREÇÃO ADICIONADA)
+            self.filter_type = tk.StringVar(value="none")  # "none", "in", "rn", "ic", "rc"
+            self.filter_value = tk.StringVar()
+            
+            # Verificar disponibilidade de recursos
+            self.has_elementos = os.path.exists("elementos.csv")
+            self.has_localidades = os.path.exists("localidades.csv")
+            self.has_config = os.path.exists("config.json")
+            
+            # Criar interface
+            self.create_widgets()
+            
+            # Atualizar estado inicial dos controles
+            self.update_ui_state()
+            
+            # Adicionar referência ao texto de ajuda
+            self.help_text = HELP_TEXT
+            
+        def load_config(self):
+            """Tenta carregar o config.json ou retorna padrão se não existir"""
+            config_file = 'config.json'
+            default_config = {
+                "LAYER_STYLES": {},
+                "LAYER_COLORS": {"default": "#036897"},
+                "PAGE_DEFINITIONS": [{"name": "VISÃO GERAL", "visible_layers": None}],
+                "CIRCULAR_LAYOUT": {"center_x": 500, "center_y": 500, "base_radius": 100, "radius_increment": 50},
+                "ORGANIC_LAYOUT": {"k_base": 0.25, "k_min": 0.8, "k_max": 2.5, "iterations_per_node": 10},
+                "GEOGRAPHIC_LAYOUT": {"canvas_width": 1000, "canvas_height": 800, "margin": 50, "min_distance": 30},
+                "NODE_STYLE": {"shape": "mxgraph.cisco.routers.router", "fillColor": "#ffffff", "strokeColor": "#000000"},
+                "CONNECTION_STYLE_BASE": {"edgeStyle": "orthogonalEdgeStyle", "curved": "0", "rounded": "0"},
+                "CONNECTION_STYLES": {"default": {"color": "#000000", "strokeWidth": "2"}},
+                "LEGEND_CONFIG": {"position": {"x": 50, "y": 30}, "item_spacing": 40}
+            }
+            
+            try:
+                if os.path.exists(config_file):
+                    with open(config_file, 'r') as f:
+                        config = json.load(f)
+                    
+                    # Logar informações da configuração
+                    logger.debug("⚙️ Configurações carregadas:")
+                    logger.debug("  - Páginas: %s", [p['name'] for p in config["PAGE_DEFINITIONS"]])
+                    logger.debug("  - Cores de camada: %s", list(config["LAYER_COLORS"].keys()))
+                    
+                    # Logar parâmetros de layout
+                    for layout in ["CIRCULAR_LAYOUT", "ORGANIC_LAYOUT", "GEOGRAPHIC_LAYOUT", "HIERARCHICAL_LAYOUT"]:
+                        if layout in config:
+                            logger.debug("  - %s: %s", layout, json.dumps(config[layout], indent=2))
+                    
+                    return config
+                return default_config
+            except Exception as e:
+                logger.exception("Erro ao carregar configuração", exc_info=True)
+                return default_config
+    
+        def _on_mousewheel(self, event, canvas):
             """Manipula eventos de rolagem do mouse para o canvas"""
             if sys.platform.startswith('linux'):
                 if event.num == 4:  # Roda para cima
@@ -407,677 +360,738 @@ class TopologyGUI:
                     canvas.yview_scroll(-1, "units")
                 else:
                     canvas.yview_scroll(1, "units")
-
-        # Vincular eventos de rolagem corretamente
-        def _bind_mousewheel(widget):
-            # Vincula eventos para Windows e macOS
-            widget.bind("<MouseWheel>", lambda e: _on_mousewheel(e, canvas))
-            
-            # Vincula eventos específicos para Linux
-            widget.bind("<Button-4>", lambda e: _on_mousewheel(e, canvas))
-            widget.bind("<Button-5>", lambda e: _on_mousewheel(e, canvas))
-
-        # Vincular eventos a todos os componentes relevantes
-        _bind_mousewheel(canvas)
-        _bind_mousewheel(scrollable_frame)
-        _bind_mousewheel(main_frame)  # Adicione esta linha
-        _bind_mousewheel(self.root)   # Adicione esta linha
-
-        # Forçar o foco no frame principal
-        main_frame.bind("<Enter>", lambda e: main_frame.focus_set())
-
-        # Empacotar os elementos corretamente
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
-        # ========= CABEÇALHO =========
-        header_frame = ttk.Frame(scrollable_frame)
-        header_frame.grid(row=0, column=0, columnspan=2, sticky="we", pady=(0, 10))
-        
-        # Título e botão de ajuda lado a lado
-        title = ttk.Label(
-            header_frame, 
-            text=f"  Gerador de Topologias de Rede",
-            style="Title.TLabel"
-        )
-        title.pack(side="left", padx=(0, 10))
-
-        help_btn = ttk.Button(
-            header_frame, 
-            text="Ajuda", 
-            command=self.show_help,
-            style="Help.TButton",
-            width=8
-        )
-        help_btn.pack(side="right")
-
-        # ========= STATUS DE RECURSOS =========
-        status_frame = ttk.LabelFrame(
-            scrollable_frame, 
-            text="Status de Recursos",
-            style="Section.TLabelframe"
-        )
-        status_frame.grid(row=1, column=0, columnspan=2, sticky="we", padx=5, pady=5)
-        status_frame.columnconfigure(1, weight=1)
-
-        # Configurar colunas para alinhamento
-        for i in range(3):
-            status_frame.columnconfigure(i, weight=1 if i == 1 else 0)
-
-        # Status dos arquivos
-        ttk.Label(status_frame, text="config.json:").grid(row=0, column=0, sticky="w", padx=(10, 5), pady=2)
-        config_status = ttk.Label(
-            status_frame, 
-            text="✔ Disponível" if self.has_config else "❌ Não encontrado", 
-            foreground="green" if self.has_config else "red"
-        )
-        config_status.grid(row=0, column=1, sticky="w", padx=5, pady=2)
-        ttk.Label(status_frame, text="(Personalização avançada)").grid(row=0, column=2, sticky="w", padx=(0, 10), pady=2)
-        
-        ttk.Label(status_frame, text="elementos.csv:").grid(row=1, column=0, sticky="w", padx=(10, 5), pady=2)
-        elementos_status = ttk.Label(
-            status_frame, 
-            text="✔ Disponível" if self.has_elementos else "⚠ Opcional não encontrado", 
-            foreground="green" if self.has_elementos else "orange"
-        )
-        elementos_status.grid(row=1, column=1, sticky="w", padx=5, pady=2)
-        ttk.Label(status_frame, text="(Dados dos equipamentos)").grid(row=1, column=2, sticky="w", padx=(0, 10), pady=2)
-        
-        ttk.Label(status_frame, text="localidades.csv:").grid(row=2, column=0, sticky="w", padx=(10, 5), pady=2)
-        localidades_status = ttk.Label(
-            status_frame, 
-            text="✔ Disponível" if self.has_localidades else "⚠ Opcional não encontrado", 
-            foreground="green" if self.has_localidades else "orange"
-        )
-        localidades_status.grid(row=2, column=1, sticky="w", padx=5, pady=2)
-        ttk.Label(status_frame, text="(Dados geográficos)").grid(row=2, column=2, sticky="w", padx=(0, 10), pady=2)
-
-        # ========= ARQUIVOS DE ENTRADA =========
-        files_frame = ttk.LabelFrame(
-            scrollable_frame, 
-            text="Arquivos de Entrada",
-            style="Section.TLabelframe"
-        )
-        files_frame.grid(row=2, column=0, columnspan=2, sticky="we", padx=5, pady=10)
-        
-        # Conexões (obrigatório)
-        conn_frame = ttk.Frame(files_frame)
-        conn_frame.pack(fill="x", padx=5, pady=5)
-        ttk.Label(conn_frame, text="Arquivo(s) de Conexões*:").pack(side="left", padx=(0, 10))
-        ttk.Button(conn_frame, text="Selecionar...", command=self.select_connection_files).pack(side="left", padx=(0, 10))
-        self.connections_label = ttk.Label(conn_frame, text="Nenhum selecionado", foreground="gray", wraplength=350)
-        self.connections_label.pack(side="left", fill="x", expand=True)
-        
-        # Elementos (opcional)
-        elem_frame = ttk.Frame(files_frame)
-        elem_frame.pack(fill="x", padx=5, pady=5)
-        ttk.Label(elem_frame, text="Arquivo de Elementos:").pack(side="left", padx=(0, 10))
-        ttk.Button(elem_frame, text="Selecionar...", command=self.select_elementos_file).pack(side="left", padx=(0, 10))
-        self.elementos_label = ttk.Label(
-            elem_frame, 
-            text=self.elementos_file if self.elementos_file else "Padrão (elementos.csv)", 
-            foreground="blue", 
-            wraplength=350
-        )
-        self.elementos_label.pack(side="left", fill="x", expand=True)
-        
-        # Localidades (opcional)
-        loc_frame = ttk.Frame(files_frame)
-        loc_frame.pack(fill="x", padx=5, pady=(5, 10))
-        ttk.Label(loc_frame, text="Arquivo de Localidades:").pack(side="left", padx=(0, 10))
-        ttk.Button(loc_frame, text="Selecionar...", command=self.select_localidades_file).pack(side="left", padx=(0, 10))
-        self.localidades_label = ttk.Label(
-            loc_frame, 
-            text=self.localidades_file if self.localidades_file else "Padrão (localidades.csv)", 
-            foreground="blue", 
-            wraplength=350
-        )
-        self.localidades_label.pack(side="left", fill="x", expand=True)
-
-        # ========= OPÇÕES DE GERAÇÃO =========
-        options_frame = ttk.LabelFrame(
-            scrollable_frame, 
-            text="Opções de Geração",
-            style="Section.TLabelframe"
-        )
-        options_frame.grid(row=3, column=0, columnspan=2, sticky="we", padx=5, pady=10)
-        
-        # Coluna 1 - Opções principais
-        col1_frame = ttk.Frame(options_frame)
-        col1_frame.pack(side="left", fill="both", expand=True, padx=10, pady=5)
-        
-        self.orphans_check = ttk.Checkbutton(
-            col1_frame, 
-            text="Incluir elementos sem conexões", 
-            variable=self.include_orphans
-        )
-        self.orphans_check.pack(anchor="w", padx=5, pady=5)
-        
-        self.regional_check = ttk.Checkbutton(
-            col1_frame, 
-            text="Regionalização das camadas", 
-            variable=self.regionalization
-        )
-        self.regional_check.pack(anchor="w", padx=5, pady=5)
-        
-        self.ignore_optional_check = ttk.Checkbutton(
-            col1_frame, 
-            text="Ignorar customizações dos CSVs", 
-            variable=self.ignore_optional
-        )
-        self.ignore_optional_check.pack(anchor="w", padx=5, pady=5)
-        
-        self.logs_check = ttk.Checkbutton(
-            col1_frame, 
-            text="Gerar arquivo de logs", 
-            variable=self.generate_logs
-        )
-        self.logs_check.pack(anchor="w", padx=5, pady=5)
-        
-        # Coluna 2 - Opções de visualização
-        col2_frame = ttk.Frame(options_frame)
-        col2_frame.pack(side="right", fill="both", expand=True, padx=10, pady=5)
-        
-        self.hide_names_check = ttk.Checkbutton(
-            col2_frame, 
-            text="Ocultar nomes dos nós", 
-            variable=self.hide_node_names
-        )
-        self.hide_names_check.pack(anchor="w", padx=5, pady=5)
-        
-        self.hide_conn_check = ttk.Checkbutton(
-            col2_frame, 
-            text="Ocultar camadas de conexão", 
-            variable=self.hide_connection_layers
-        )
-        self.hide_conn_check.pack(anchor="w", padx=5, pady=5)
-        
-        # ========= FILTROS =========
-        filters_frame = ttk.LabelFrame(
-            scrollable_frame, 
-            text="Filtros Avançados",
-            style="Section.TLabelframe"
-        )
-        filters_frame.grid(row=7, column=0, columnspan=2, sticky="we", padx=5, pady=10)
-
-        # Grupo de radiobuttons
-        filter_type_frame = ttk.Frame(filters_frame)
-        filter_type_frame.pack(fill="x", padx=10, pady=(10, 5))
-
-        ttk.Label(filter_type_frame, text="Tipo de filtro:").pack(side="left", padx=(0, 15))
-
-        filter_types = [
-            ("Nenhum filtro", "none"),
-            ("Incluir elementos (in)", "in"),
-            ("Remover elementos (rn)", "rn"),
-            ("Incluir camadas (ic)", "ic"),
-            ("Remover camadas (rc)", "rc")
-        ]
-
-        # Organizar em 2 colunas
-        cols_frame = ttk.Frame(filter_type_frame)
-        cols_frame.pack(side="left", fill="x", expand=True)
-        
-        col1 = ttk.Frame(cols_frame)
-        col1.pack(side="left", fill="x", expand=True, padx=5)
-        col2 = ttk.Frame(cols_frame)
-        col2.pack(side="left", fill="x", expand=True, padx=5)
-        
-        for i, (text, value) in enumerate(filter_types):
-            col = col1 if i < 3 else col2
-            rb = ttk.Radiobutton(
-                col,
-                text=text,
-                variable=self.filter_type,
-                value=value,
-                command=self.update_filter_state
-            )
-            rb.pack(anchor="w", padx=5, pady=2)
-
-        # Campo para valor do filtro
-        filter_value_frame = ttk.Frame(filters_frame)
-        filter_value_frame.pack(fill="x", padx=10, pady=(0, 10))
-
-        ttk.Label(filter_value_frame, text="Valores (separados por ;):").pack(side="left", padx=(0, 10))
-
-        self.filter_entry = ttk.Entry(
-            filter_value_frame, 
-            textvariable=self.filter_value,
-            width=40,
-            state="disabled"
-        )
-        self.filter_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
-
-        # ========= LAYOUTS =========
-        layouts_frame = ttk.LabelFrame(
-            scrollable_frame, 
-            text="Layouts de Saída",
-            style="Section.TLabelframe"
-        )
-        layouts_frame.grid(row=5, column=0, columnspan=2, sticky="we", padx=5, pady=10)
-
-        # Controles de seleção em massa
-        ctrl_frame = ttk.Frame(layouts_frame)
-        ctrl_frame.pack(fill="x", padx=10, pady=(5, 0))
-        
-        ttk.Label(ctrl_frame, text="Seleção:").pack(side="left", padx=(0, 10))
-        
-        self.mark_all_btn = ttk.Button(
-            ctrl_frame, 
-            text="Marcar Todos",
-            command=self.mark_all_layouts,
-            width=14
-        )
-        self.mark_all_btn.pack(side="left", padx=(0, 5))
-        
-        self.unmark_all_btn = ttk.Button(
-            ctrl_frame, 
-            text="Desmarcar Todos",
-            command=self.unmark_all_layouts,
-            width=18
-        )
-        self.unmark_all_btn.pack(side="left")
-
-        # Checkboxes individuais organizados horizontalmente
-        checks_frame = ttk.Frame(layouts_frame)
-        checks_frame.pack(fill="x", padx=20, pady=10)
-        
-        self.circular_check = ttk.Checkbutton(
-            checks_frame, 
-            text="Circular", 
-            variable=self.circular_layout
-        )
-        self.circular_check.pack(side="left", padx=20, pady=5)
-        
-        self.organic_check = ttk.Checkbutton(
-            checks_frame, 
-            text="Orgânico", 
-            variable=self.organic_layout
-        )
-        self.organic_check.pack(side="left", padx=20, pady=5)
-        
-        self.geographic_check = ttk.Checkbutton(
-            checks_frame, 
-            text="Geográfico", 
-            variable=self.geographic_layout
-        )
-        self.geographic_check.pack(side="left", padx=20, pady=5)
-        
-        self.hierarchical_check = ttk.Checkbutton(
-            checks_frame, 
-            text="Hierárquico", 
-            variable=self.hierarchical_layout
-        )
-        self.hierarchical_check.pack(side="left", padx=20, pady=5)
-
-        # ========= AÇÃO PRINCIPAL =========
-        action_frame = ttk.Frame(scrollable_frame)
-        action_frame.grid(row=6, column=0, columnspan=2, sticky="we", padx=5, pady=1)
-        
-        # Botão de geração centralizado
-        generate_btn = ttk.Button(
-            action_frame, 
-            text="Gerar Topologias", 
-            command=self.generate_topologies,
-            style="Accent.TButton",
-            width=50
-        )
-        generate_btn.pack(pady=10, ipadx=10, ipady=8)
-
-        # ========= BARRA DE STATUS =========
-        self.status_var = tk.StringVar(value="Pronto para gerar topologias")
-        status_bar = ttk.Label(
-            self.root, 
-            textvariable=self.status_var, 
-            relief="sunken", 
-            anchor="w",
-            padding=(10, 5)
-        )
-        status_bar.pack(side="bottom", fill="x")
-        
-        # Atualizar estado inicial
-        self.update_ui_state()
-        self.update_filter_state()
-        canvas.bind("<Motion>", lambda e: canvas.focus_set())  # Melhora resposta ao touchpad
-
     
-    # Adicione este novo método na classe:
-    def update_filter_state(self):
-        """Atualiza o estado do campo de entrada baseado no tipo de filtro"""
-        if self.filter_type.get() != "none":
-            self.filter_entry.config(state="normal")
-        else:
-            self.filter_entry.config(state="disabled")
-            self.filter_value.set("")                        
-
-    def show_help(self):
-        """Exibe janela de ajuda com conteúdo completo"""
-        help_window = tk.Toplevel(self.root)
-        help_window.title("Ajuda do Gerador de Topologias")
-        help_window.geometry("900x700")
-        help_window.resizable(True, True)
-        
-        # Frame principal
-        main_frame = ttk.Frame(help_window)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Área de texto com rolagem
-        text_area = scrolledtext.ScrolledText(
-            main_frame,
-            wrap=tk.WORD,
-            font=("Consolas", 10),
-            bg="#F0F0F0",
-            padx=10,
-            pady=10
-        )
-        text_area.pack(fill=tk.BOTH, expand=True)
-        
-        # Inserir texto de ajuda
-        text_area.insert(tk.INSERT, self.help_text)
-        text_area.configure(state="disabled")  # Somente leitura
-        
-        # Botão de fechar
-        close_btn = ttk.Button(
-            main_frame,
-            text="Fechar",
-            command=help_window.destroy
-        )
-        close_btn.pack(pady=10)
-
-
-    def mark_all_layouts(self):
-        """Marca todos os layouts disponíveis com tratamento especial para geográfico"""
-        self.circular_layout.set(True)
-        self.organic_layout.set(True)
-        self.hierarchical_layout.set(True)
-        
-        # Verificar disponibilidade dos arquivos diretamente
-        if self.has_elementos and self.has_localidades:
-            self.geographic_layout.set(True)
-
-    def unmark_all_layouts(self):
-        """Desmarca todos os layouts disponíveis"""
-        self.circular_layout.set(False)
-        self.organic_layout.set(False)
-        self.hierarchical_layout.set(False)
-        self.geographic_layout.set(False)
-
-    def update_ui_state(self):
-        # Atualizar estado dos controles baseado na disponibilidade de arquivos
-        self.has_elementos = os.path.exists(self.elementos_file) if self.elementos_file else False
-        self.has_localidades = os.path.exists(self.localidades_file) if self.localidades_file else False
-        
-        # Habilitar/desabilitar controles
-        state_orphans = "normal" if self.has_elementos else "disabled"
-        self.orphans_check.configure(state=state_orphans)
-        
-        # Regionalização requer elementos E localidades
-        state_regional = "normal" if (self.has_elementos and self.has_localidades) else "disabled"
-        self.regional_check.configure(state=state_regional)
-        
-        # Layout geográfico requer elementos E localidades
-        state_geo = "normal" if (self.has_elementos and self.has_localidades) else "disabled"
-        self.geographic_check.configure(state=state_geo)
-        
-        # Atualizar variáveis se arquivos não existirem
-        if not self.has_localidades:
-            self.regionalization.set(False)
-            self.geographic_layout.set(False)
-        
-        if not self.has_config:
-            self.ignore_optional_check.configure(state="disabled")
-            self.ignore_optional.set(False)
-        
-        # Atualizar estado dos botões
-        self.update_button_states()
-
-    def update_button_states(self):
-        """Atualiza estado dos botões baseado na disponibilidade de recursos"""
-        self.mark_all_btn["state"] = "normal"
-        self.unmark_all_btn["state"] = "normal"
-        
-    def select_connection_files(self):
-        files = filedialog.askopenfilenames(
-            title="Selecione arquivo(s) de conexões",
-            filetypes=[("Arquivos CSV", "*.csv"), ("Todos os arquivos", "*.*")]
-        )
-        if files:
-            self.connection_files = list(files)
-            file_names = ", ".join([os.path.basename(f) for f in files[:3]])
-            if len(files) > 3:
-                file_names += f", ... (+{len(files)-3} mais)"
-            self.connections_label.config(text=file_names, foreground="blue")
-
-    def select_elementos_file(self):
-        file = filedialog.askopenfilename(
-            title="Selecione arquivo de elementos",
-            filetypes=[("Arquivos CSV", "*.csv"), ("Todos os arquivos", "*.*")]
-        )
-        if file:
-            self.elementos_file = file
-            self.elementos_label.config(text=os.path.basename(file), foreground="blue")
-            self.update_ui_state()
-
-    def select_localidades_file(self):
-        file = filedialog.askopenfilename(
-            title="Selecione arquivo de localidades",
-            filetypes=[("Arquivos CSV", "*.csv"), ("Todos os arquivos", "*.*")]
-        )
-        if file:
-            self.localidades_file = file
-            self.localidades_label.config(text=os.path.basename(file), foreground="blue")
-            self.update_ui_state()
-
-    def generate_topologies(self):
-        hide_node_names = self.hide_node_names.get()
-        hide_connection_layers = self.hide_connection_layers.get()
-        
-        if not self.connection_files:
-            messagebox.showerror("Erro", "Selecione pelo menos um arquivo de conexões!")
-            return
-            
-        if not any([self.circular_layout.get(), self.organic_layout.get(), 
-                   self.geographic_layout.get(), self.hierarchical_layout.get()]):
-            messagebox.showerror("Erro", "Selecione pelo menos um tipo de layout!")
-            return
-
-        # Obter configuração de filtro ANTES do loop
-        filter_str = None
-        if self.filter_type.get() != "none":
-            filter_value = self.filter_value.get().strip()
-            if not filter_value:
-                messagebox.showwarning("Aviso", "Filtro selecionado mas sem valores definidos!")
-                return
-            filter_str = f"{self.filter_type.get()}:{filter_value}" 
-
- 
-        # Configurar logging se necessário
-        if self.generate_logs.get():
-            log_file = f'topologia_gui_log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
-            file_handler = logging.FileHandler(log_file, mode='w', encoding='utf-8')
-            file_handler.setLevel(logging.INFO)
-            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
-            logger.info("Logs habilitados, gravando em: %s", log_file)
-
-            # Novo registro de informações
-            logger.info("Execução iniciada via GUI")
-            logger.info("Opções usadas (diferentes do padrão):")
-            
-            # Verificar diferenças em relação ao padrão
-            if self.include_orphans.get():
-                logger.info("  Incluir nós órfãos")
-            if self.regionalization.get():
-                logger.info("  Regionalização")
+        def create_widgets(self):
+            # Configurar estilo
+            style = ttk.Style()
+            style.configure("Title.TLabel", font=("Arial", 16, "bold"), foreground="#036897")
+            style.configure("Section.TLabelframe.Label", font=("Arial", 10, "bold"), foreground="#036897")
+            style.configure("Accent.TButton", font=("Arial", 10, "bold"), foreground="#000000", background="#036897")
+            style.configure("Help.TButton", font=("Arial", 10, "bold"), foreground="#000000", background="#FF8C00")
+    
+            # Frame principal com scrollbar - CORREÇÃO DO SCROLL
+            main_frame = ttk.Frame(self.root)
+            main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+    
+            # Canvas e scrollbar
+            canvas = tk.Canvas(main_frame, highlightthickness=0)
+            scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
+            scrollable_frame = ttk.Frame(canvas)
+    
+            # Configurar sistema de scroll
+            def _configure_canvas(e):
+                # Atualiza a região de scroll e força redimensionamento
+                canvas.configure(scrollregion=canvas.bbox("all"))
+                canvas.yview_moveto(0)  # Mantém no topo ao redimensionar
+            scrollable_frame.bind("<Configure>", _configure_canvas)
+    
+            # Criar janela no canvas para o frame interno
+            canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    
+            # Configurar scrollbar
+            canvas.configure(yscrollcommand=scrollbar.set)
+    
+            # Permitir que o frame interno expanda com o conteúdo
+            scrollable_frame.bind("<Configure>", 
+                lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
                 
+            # Configurar expansão do grid
+            scrollable_frame.grid_rowconfigure(0, weight=1)
+            scrollable_frame.grid_columnconfigure(0, weight=1)
+    
+            # Função aprimorada para rolagem
+            def _on_mousewheel(event, canvas):
+                """Manipula eventos de rolagem do mouse para o canvas"""
+                if sys.platform.startswith('linux'):
+                    if event.num == 4:  # Roda para cima
+                        canvas.yview_scroll(-1, "units")
+                    elif event.num == 5: # Roda para baixo
+                        canvas.yview_scroll(1, "units")
+                else:
+                    # Windows e macOS
+                    delta = event.delta
+                    if sys.platform == "darwin":  # Ajuste para macOS
+                        delta = -delta
+                        
+                    if delta > 0:
+                        canvas.yview_scroll(-1, "units")
+                    else:
+                        canvas.yview_scroll(1, "units")
+    
+            # Vincular eventos de rolagem corretamente
+            def _bind_mousewheel(widget):
+                # Vincula eventos para Windows e macOS
+                widget.bind("<MouseWheel>", lambda e: _on_mousewheel(e, canvas))
+                
+                # Vincula eventos específicos para Linux
+                widget.bind("<Button-4>", lambda e: _on_mousewheel(e, canvas))
+                widget.bind("<Button-5>", lambda e: _on_mousewheel(e, canvas))
+    
+            # Vincular eventos a todos os componentes relevantes
+            _bind_mousewheel(canvas)
+            _bind_mousewheel(scrollable_frame)
+            _bind_mousewheel(main_frame)  # Adicione esta linha
+            _bind_mousewheel(self.root)   # Adicione esta linha
+    
+            # Forçar o foco no frame principal
+            main_frame.bind("<Enter>", lambda e: main_frame.focus_set())
+    
+            # Empacotar os elementos corretamente
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+    
+            # ========= CABEÇALHO =========
+            header_frame = ttk.Frame(scrollable_frame)
+            header_frame.grid(row=0, column=0, columnspan=2, sticky="we", pady=(0, 10))
+            
+            # Título e botão de ajuda lado a lado
+            title = ttk.Label(
+                header_frame, 
+                text=f"  Gerador de Topologias de Rede",
+                style="Title.TLabel"
+            )
+            title.pack(side="left", padx=(0, 10))
+    
+            help_btn = ttk.Button(
+                header_frame, 
+                text="Ajuda", 
+                command=self.show_help,
+                style="Help.TButton",
+                width=8
+            )
+            help_btn.pack(side="right")
+    
+            # ========= STATUS DE RECURSOS =========
+            status_frame = ttk.LabelFrame(
+                scrollable_frame, 
+                text="Status de Recursos",
+                style="Section.TLabelframe"
+            )
+            status_frame.grid(row=1, column=0, columnspan=2, sticky="we", padx=5, pady=5)
+            status_frame.columnconfigure(1, weight=1)
+    
+            # Configurar colunas para alinhamento
+            for i in range(3):
+                status_frame.columnconfigure(i, weight=1 if i == 1 else 0)
+    
+            # Status dos arquivos
+            ttk.Label(status_frame, text="config.json:").grid(row=0, column=0, sticky="w", padx=(10, 5), pady=2)
+            config_status = ttk.Label(
+                status_frame, 
+                text="✔ Disponível" if self.has_config else "❌ Não encontrado", 
+                foreground="green" if self.has_config else "red"
+            )
+            config_status.grid(row=0, column=1, sticky="w", padx=5, pady=2)
+            ttk.Label(status_frame, text="(Personalização avançada)").grid(row=0, column=2, sticky="w", padx=(0, 10), pady=2)
+            
+            ttk.Label(status_frame, text="elementos.csv:").grid(row=1, column=0, sticky="w", padx=(10, 5), pady=2)
+            elementos_status = ttk.Label(
+                status_frame, 
+                text="✔ Disponível" if self.has_elementos else "⚠ Opcional não encontrado", 
+                foreground="green" if self.has_elementos else "orange"
+            )
+            elementos_status.grid(row=1, column=1, sticky="w", padx=5, pady=2)
+            ttk.Label(status_frame, text="(Dados dos equipamentos)").grid(row=1, column=2, sticky="w", padx=(0, 10), pady=2)
+            
+            ttk.Label(status_frame, text="localidades.csv:").grid(row=2, column=0, sticky="w", padx=(10, 5), pady=2)
+            localidades_status = ttk.Label(
+                status_frame, 
+                text="✔ Disponível" if self.has_localidades else "⚠ Opcional não encontrado", 
+                foreground="green" if self.has_localidades else "orange"
+            )
+            localidades_status.grid(row=2, column=1, sticky="w", padx=5, pady=2)
+            ttk.Label(status_frame, text="(Dados geográficos)").grid(row=2, column=2, sticky="w", padx=(0, 10), pady=2)
+    
+            # ========= ARQUIVOS DE ENTRADA =========
+            files_frame = ttk.LabelFrame(
+                scrollable_frame, 
+                text="Arquivos de Entrada",
+                style="Section.TLabelframe"
+            )
+            files_frame.grid(row=2, column=0, columnspan=2, sticky="we", padx=5, pady=10)
+            
+            # Conexões (obrigatório)
+            conn_frame = ttk.Frame(files_frame)
+            conn_frame.pack(fill="x", padx=5, pady=5)
+            ttk.Label(conn_frame, text="Arquivo(s) de Conexões*:").pack(side="left", padx=(0, 10))
+            ttk.Button(conn_frame, text="Selecionar...", command=self.select_connection_files).pack(side="left", padx=(0, 10))
+            self.connections_label = ttk.Label(conn_frame, text="Nenhum selecionado", foreground="gray", wraplength=350)
+            self.connections_label.pack(side="left", fill="x", expand=True)
+            
+            # Elementos (opcional)
+            elem_frame = ttk.Frame(files_frame)
+            elem_frame.pack(fill="x", padx=5, pady=5)
+            ttk.Label(elem_frame, text="Arquivo de Elementos:").pack(side="left", padx=(0, 10))
+            ttk.Button(elem_frame, text="Selecionar...", command=self.select_elementos_file).pack(side="left", padx=(0, 10))
+            self.elementos_label = ttk.Label(
+                elem_frame, 
+                text=self.elementos_file if self.elementos_file else "Padrão (elementos.csv)", 
+                foreground="blue", 
+                wraplength=350
+            )
+            self.elementos_label.pack(side="left", fill="x", expand=True)
+            
+            # Localidades (opcional)
+            loc_frame = ttk.Frame(files_frame)
+            loc_frame.pack(fill="x", padx=5, pady=(5, 10))
+            ttk.Label(loc_frame, text="Arquivo de Localidades:").pack(side="left", padx=(0, 10))
+            ttk.Button(loc_frame, text="Selecionar...", command=self.select_localidades_file).pack(side="left", padx=(0, 10))
+            self.localidades_label = ttk.Label(
+                loc_frame, 
+                text=self.localidades_file if self.localidades_file else "Padrão (localidades.csv)", 
+                foreground="blue", 
+                wraplength=350
+            )
+            self.localidades_label.pack(side="left", fill="x", expand=True)
+    
+            # ========= OPÇÕES DE GERAÇÃO =========
+            options_frame = ttk.LabelFrame(
+                scrollable_frame, 
+                text="Opções de Geração",
+                style="Section.TLabelframe"
+            )
+            options_frame.grid(row=3, column=0, columnspan=2, sticky="we", padx=5, pady=10)
+            
+            # Coluna 1 - Opções principais
+            col1_frame = ttk.Frame(options_frame)
+            col1_frame.pack(side="left", fill="both", expand=True, padx=10, pady=5)
+            
+            self.orphans_check = ttk.Checkbutton(
+                col1_frame, 
+                text="Incluir elementos sem conexões", 
+                variable=self.include_orphans
+            )
+            self.orphans_check.pack(anchor="w", padx=5, pady=5)
+            
+            self.regional_check = ttk.Checkbutton(
+                col1_frame, 
+                text="Regionalização das camadas", 
+                variable=self.regionalization
+            )
+            self.regional_check.pack(anchor="w", padx=5, pady=5)
+            
+            self.ignore_optional_check = ttk.Checkbutton(
+                col1_frame, 
+                text="Ignorar customizações dos CSVs", 
+                variable=self.ignore_optional
+            )
+            self.ignore_optional_check.pack(anchor="w", padx=5, pady=5)
+            
+            self.logs_check = ttk.Checkbutton(
+                col1_frame, 
+                text="Gerar arquivo de logs", 
+                variable=self.generate_logs
+            )
+            self.logs_check.pack(anchor="w", padx=5, pady=5)
+            
+            # Coluna 2 - Opções de visualização
+            col2_frame = ttk.Frame(options_frame)
+            col2_frame.pack(side="right", fill="both", expand=True, padx=10, pady=5)
+            
+            self.hide_names_check = ttk.Checkbutton(
+                col2_frame, 
+                text="Ocultar nomes dos nós", 
+                variable=self.hide_node_names
+            )
+            self.hide_names_check.pack(anchor="w", padx=5, pady=5)
+            
+            self.hide_conn_check = ttk.Checkbutton(
+                col2_frame, 
+                text="Ocultar camadas de conexão", 
+                variable=self.hide_connection_layers
+            )
+            self.hide_conn_check.pack(anchor="w", padx=5, pady=5)
+            
+            # ========= FILTROS =========
+            filters_frame = ttk.LabelFrame(
+                scrollable_frame, 
+                text="Filtros Avançados",
+                style="Section.TLabelframe"
+            )
+            filters_frame.grid(row=7, column=0, columnspan=2, sticky="we", padx=5, pady=10)
+    
+            # Grupo de radiobuttons
+            filter_type_frame = ttk.Frame(filters_frame)
+            filter_type_frame.pack(fill="x", padx=10, pady=(10, 5))
+    
+            ttk.Label(filter_type_frame, text="Tipo de filtro:").pack(side="left", padx=(0, 15))
+    
+            filter_types = [
+                ("Nenhum filtro", "none"),
+                ("Incluir elementos (in)", "in"),
+                ("Remover elementos (rn)", "rn"),
+                ("Incluir camadas (ic)", "ic"),
+                ("Remover camadas (rc)", "rc")
+            ]
+    
+            # Organizar em 2 colunas
+            cols_frame = ttk.Frame(filter_type_frame)
+            cols_frame.pack(side="left", fill="x", expand=True)
+            
+            col1 = ttk.Frame(cols_frame)
+            col1.pack(side="left", fill="x", expand=True, padx=5)
+            col2 = ttk.Frame(cols_frame)
+            col2.pack(side="left", fill="x", expand=True, padx=5)
+            
+            for i, (text, value) in enumerate(filter_types):
+                col = col1 if i < 3 else col2
+                rb = ttk.Radiobutton(
+                    col,
+                    text=text,
+                    variable=self.filter_type,
+                    value=value,
+                    command=self.update_filter_state
+                )
+                rb.pack(anchor="w", padx=5, pady=2)
+    
+            # Campo para valor do filtro
+            filter_value_frame = ttk.Frame(filters_frame)
+            filter_value_frame.pack(fill="x", padx=10, pady=(0, 10))
+    
+            ttk.Label(filter_value_frame, text="Valores (separados por ;):").pack(side="left", padx=(0, 10))
+    
+            self.filter_entry = ttk.Entry(
+                filter_value_frame, 
+                textvariable=self.filter_value,
+                width=40,
+                state="disabled"
+            )
+            self.filter_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+    
+            # ========= LAYOUTS =========
+            layouts_frame = ttk.LabelFrame(
+                scrollable_frame, 
+                text="Layouts de Saída",
+                style="Section.TLabelframe"
+            )
+            layouts_frame.grid(row=5, column=0, columnspan=2, sticky="we", padx=5, pady=10)
+    
+            # Controles de seleção em massa
+            ctrl_frame = ttk.Frame(layouts_frame)
+            ctrl_frame.pack(fill="x", padx=10, pady=(5, 0))
+            
+            ttk.Label(ctrl_frame, text="Seleção:").pack(side="left", padx=(0, 10))
+            
+            self.mark_all_btn = ttk.Button(
+                ctrl_frame, 
+                text="Marcar Todos",
+                command=self.mark_all_layouts,
+                width=14
+            )
+            self.mark_all_btn.pack(side="left", padx=(0, 5))
+            
+            self.unmark_all_btn = ttk.Button(
+                ctrl_frame, 
+                text="Desmarcar Todos",
+                command=self.unmark_all_layouts,
+                width=18
+            )
+            self.unmark_all_btn.pack(side="left")
+    
+            # Checkboxes individuais organizados horizontalmente
+            checks_frame = ttk.Frame(layouts_frame)
+            checks_frame.pack(fill="x", padx=20, pady=10)
+            
+            self.circular_check = ttk.Checkbutton(
+                checks_frame, 
+                text="Circular", 
+                variable=self.circular_layout
+            )
+            self.circular_check.pack(side="left", padx=20, pady=5)
+            
+            self.organic_check = ttk.Checkbutton(
+                checks_frame, 
+                text="Orgânico", 
+                variable=self.organic_layout
+            )
+            self.organic_check.pack(side="left", padx=20, pady=5)
+            
+            self.geographic_check = ttk.Checkbutton(
+                checks_frame, 
+                text="Geográfico", 
+                variable=self.geographic_layout
+            )
+            self.geographic_check.pack(side="left", padx=20, pady=5)
+            
+            self.hierarchical_check = ttk.Checkbutton(
+                checks_frame, 
+                text="Hierárquico", 
+                variable=self.hierarchical_layout
+            )
+            self.hierarchical_check.pack(side="left", padx=20, pady=5)
+    
+            # ========= AÇÃO PRINCIPAL =========
+            action_frame = ttk.Frame(scrollable_frame)
+            action_frame.grid(row=6, column=0, columnspan=2, sticky="we", padx=5, pady=1)
+            
+            # Botão de geração centralizado
+            generate_btn = ttk.Button(
+                action_frame, 
+                text="Gerar Topologias", 
+                command=self.generate_topologies,
+                style="Accent.TButton",
+                width=50
+            )
+            generate_btn.pack(pady=10, ipadx=10, ipady=8)
+    
+            # ========= BARRA DE STATUS =========
+            self.status_var = tk.StringVar(value="Pronto para gerar topologias")
+            status_bar = ttk.Label(
+                self.root, 
+                textvariable=self.status_var, 
+                relief="sunken", 
+                anchor="w",
+                padding=(10, 5)
+            )
+            status_bar.pack(side="bottom", fill="x")
+            
+            # Atualizar estado inicial
+            self.update_ui_state()
+            self.update_filter_state()
+            canvas.bind("<Motion>", lambda e: canvas.focus_set())  # Melhora resposta ao touchpad
+    
+        
+        # Adicione este novo método na classe:
+        def update_filter_state(self):
+            """Atualiza o estado do campo de entrada baseado no tipo de filtro"""
+            if self.filter_type.get() != "none":
+                self.filter_entry.config(state="normal")
+            else:
+                self.filter_entry.config(state="disabled")
+                self.filter_value.set("")                        
+    
+        def show_help(self):
+            """Exibe janela de ajuda com conteúdo completo"""
+            help_window = tk.Toplevel(self.root)
+            help_window.title("Ajuda do Gerador de Topologias")
+            help_window.geometry("900x700")
+            help_window.resizable(True, True)
+            
+            # Frame principal
+            main_frame = ttk.Frame(help_window)
+            main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+            
+            # Área de texto com rolagem
+            text_area = scrolledtext.ScrolledText(
+                main_frame,
+                wrap=tk.WORD,
+                font=("Consolas", 10),
+                bg="#F0F0F0",
+                padx=10,
+                pady=10
+            )
+            text_area.pack(fill=tk.BOTH, expand=True)
+            
+            # Inserir texto de ajuda
+            text_area.insert(tk.INSERT, self.help_text)
+            text_area.configure(state="disabled")  # Somente leitura
+            
+            # Botão de fechar
+            close_btn = ttk.Button(
+                main_frame,
+                text="Fechar",
+                command=help_window.destroy
+            )
+            close_btn.pack(pady=10)
+    
+    
+        def mark_all_layouts(self):
+            """Marca todos os layouts disponíveis com tratamento especial para geográfico"""
+            self.circular_layout.set(True)
+            self.organic_layout.set(True)
+            self.hierarchical_layout.set(True)
+            
+            # Verificar disponibilidade dos arquivos diretamente
+            if self.has_elementos and self.has_localidades:
+                self.geographic_layout.set(True)
+    
+        def unmark_all_layouts(self):
+            """Desmarca todos os layouts disponíveis"""
+            self.circular_layout.set(False)
+            self.organic_layout.set(False)
+            self.hierarchical_layout.set(False)
+            self.geographic_layout.set(False)
+    
+        def update_ui_state(self):
+            # Atualizar estado dos controles baseado na disponibilidade de arquivos
+            self.has_elementos = os.path.exists(self.elementos_file) if self.elementos_file else False
+            self.has_localidades = os.path.exists(self.localidades_file) if self.localidades_file else False
+            
+            # Habilitar/desabilitar controles
+            state_orphans = "normal" if self.has_elementos else "disabled"
+            self.orphans_check.configure(state=state_orphans)
+            
+            # Regionalização requer elementos E localidades
+            state_regional = "normal" if (self.has_elementos and self.has_localidades) else "disabled"
+            self.regional_check.configure(state=state_regional)
+            
+            # Layout geográfico requer elementos E localidades
+            state_geo = "normal" if (self.has_elementos and self.has_localidades) else "disabled"
+            self.geographic_check.configure(state=state_geo)
+            
+            # Atualizar variáveis se arquivos não existirem
+            if not self.has_localidades:
+                self.regionalization.set(False)
+                self.geographic_layout.set(False)
+            
+            if not self.has_config:
+                self.ignore_optional_check.configure(state="disabled")
+                self.ignore_optional.set(False)
+            
+            # Atualizar estado dos botões
+            self.update_button_states()
+    
+        def update_button_states(self):
+            """Atualiza estado dos botões baseado na disponibilidade de recursos"""
+            self.mark_all_btn["state"] = "normal"
+            self.unmark_all_btn["state"] = "normal"
+            
+        def select_connection_files(self):
+            files = filedialog.askopenfilenames(
+                title="Selecione arquivo(s) de conexões",
+                filetypes=[("Arquivos CSV", "*.csv"), ("Todos os arquivos", "*.*")]
+            )
+            if files:
+                self.connection_files = list(files)
+                file_names = ", ".join([os.path.basename(f) for f in files[:3]])
+                if len(files) > 3:
+                    file_names += f", ... (+{len(files)-3} mais)"
+                self.connections_label.config(text=file_names, foreground="blue")
+    
+        def select_elementos_file(self):
+            file = filedialog.askopenfilename(
+                title="Selecione arquivo de elementos",
+                filetypes=[("Arquivos CSV", "*.csv"), ("Todos os arquivos", "*.*")]
+            )
+            if file:
+                self.elementos_file = file
+                self.elementos_label.config(text=os.path.basename(file), foreground="blue")
+                self.update_ui_state()
+    
+        def select_localidades_file(self):
+            file = filedialog.askopenfilename(
+                title="Selecione arquivo de localidades",
+                filetypes=[("Arquivos CSV", "*.csv"), ("Todos os arquivos", "*.*")]
+            )
+            if file:
+                self.localidades_file = file
+                self.localidades_label.config(text=os.path.basename(file), foreground="blue")
+                self.update_ui_state()
+    
+        def generate_topologies(self):
+            hide_node_names = self.hide_node_names.get()
+            hide_connection_layers = self.hide_connection_layers.get()
+            
+            if not self.connection_files:
+                messagebox.showerror("Erro", "Selecione pelo menos um arquivo de conexões!")
+                return
+                
+            if not any([self.circular_layout.get(), self.organic_layout.get(), 
+                       self.geographic_layout.get(), self.hierarchical_layout.get()]):
+                messagebox.showerror("Erro", "Selecione pelo menos um tipo de layout!")
+                return
+    
+            # Obter configuração de filtro ANTES do loop
+            filter_str = None
+            if self.filter_type.get() != "none":
+                filter_value = self.filter_value.get().strip()
+                if not filter_value:
+                    messagebox.showwarning("Aviso", "Filtro selecionado mas sem valores definidos!")
+                    return
+                filter_str = f"{self.filter_type.get()}:{filter_value}" 
+    
+     
+            # Configurar logging se necessário
+            if self.generate_logs.get():
+                log_file = f'topologia_gui_log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
+                file_handler = logging.FileHandler(log_file, mode='w', encoding='utf-8')
+                file_handler.setLevel(logging.INFO)
+                formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+                file_handler.setFormatter(formatter)
+                logger.addHandler(file_handler)
+                logger.info("Logs habilitados, gravando em: %s", log_file)
+    
+                # Novo registro de informações
+                logger.info("Execução iniciada via GUI")
+                logger.info("Opções usadas (diferentes do padrão):")
+                
+                # Verificar diferenças em relação ao padrão
+                if self.include_orphans.get():
+                    logger.info("  Incluir nós órfãos")
+                if self.regionalization.get():
+                    logger.info("  Regionalização")
+                    
+                layouts = ""
+                if self.circular_layout.get(): layouts += "c"
+                if self.organic_layout.get(): layouts += "o"
+                if self.geographic_layout.get(): layouts += "g"
+                if self.hierarchical_layout.get(): layouts += "h"
+                if layouts != "c":  # Padrão é apenas circular
+                    logger.info("  Layouts: %s", layouts)
+                    
+                if self.elementos_file != "elementos.csv":
+                    logger.info("  Elementos: %s", self.elementos_file)
+                if self.localidades_file != "localidades.csv":
+                    logger.info("  Localidades: %s", self.localidades_file)
+                    
+                if self.hide_node_names.get():
+                    logger.info("  Ocultar nomes dos nós")
+                if self.hide_connection_layers.get():
+                    logger.info("  Ocultar camadas de conexão")
+            
+            # Registrar informações do sistema
+            logger.debug("Sistema: %s %s", sys.platform, platform.platform())
+            logger.debug("Python: %s", sys.version)
+            logger.debug("Dependências: networkx=%s", nx.__version__)
+            
+            # Determinar layouts selecionados
             layouts = ""
             if self.circular_layout.get(): layouts += "c"
             if self.organic_layout.get(): layouts += "o"
             if self.geographic_layout.get(): layouts += "g"
             if self.hierarchical_layout.get(): layouts += "h"
-            if layouts != "c":  # Padrão é apenas circular
-                logger.info("  Layouts: %s", layouts)
+            
+            # Criar instância de configuração
+            config = self.load_config()
+            
+            # Processar cada arquivo
+            success = True
+            total_files = len(self.connection_files)
+            
+            for idx, file in enumerate(self.connection_files):
+                self.status_var.set(f"Processando arquivo {idx+1}/{total_files}: {os.path.basename(file)}")
+                self.root.update()
                 
-            if self.elementos_file != "elementos.csv":
-                logger.info("  Elementos: %s", self.elementos_file)
-            if self.localidades_file != "localidades.csv":
-                logger.info("  Localidades: %s", self.localidades_file)
+                try:
+                    # CORREÇÃO: Passar os parâmetros na ordem correta
+                    result = self.process_single_file(
+                        file, 
+                        config, 
+                        self.include_orphans.get(), 
+                        layouts, 
+                        self.regionalization.get(),
+                        self.elementos_file,
+                        self.localidades_file,
+                        hide_node_names,          # Corrigido
+                        hide_connection_layers,    # Corrigido
+                        ignore_optional=self.ignore_optional.get(),
+                        filter_string=filter_str
+                    )
+                    if not result:
+                        success = False
+                        self.status_var.set(f"Erro ao processar: {os.path.basename(file)}")
+                except Exception as e:
+                    logger.error(f"Erro ao processar {file}: {str(e)}", exc_info=True)
+                    success = False
+                    self.status_var.set(f"Erro grave em: {os.path.basename(file)}")
+            
+            if success:
+                messagebox.showinfo("Sucesso", "Todas as topologias foram geradas com sucesso!")
+                self.status_var.set("Processamento concluído com sucesso")
+            else:
+                messagebox.showwarning("Aviso", "Algumas topologias podem não ter sido geradas corretamente. Verifique os logs.")
+                self.status_var.set("Processamento concluído com erros")
                 
-            if self.hide_node_names.get():
-                logger.info("  Ocultar nomes dos nós")
-            if self.hide_connection_layers.get():
-                logger.info("  Ocultar camadas de conexão")
-        
-        # Registrar informações do sistema
-        logger.debug("Sistema: %s %s", sys.platform, platform.platform())
-        logger.debug("Python: %s", sys.version)
-        logger.debug("Dependências: networkx=%s", nx.__version__)
-        
-        # Determinar layouts selecionados
-        layouts = ""
-        if self.circular_layout.get(): layouts += "c"
-        if self.organic_layout.get(): layouts += "o"
-        if self.geographic_layout.get(): layouts += "g"
-        if self.hierarchical_layout.get(): layouts += "h"
-        
-        # Criar instância de configuração
-        config = self.load_config()
-        
-        # Processar cada arquivo
-        success = True
-        total_files = len(self.connection_files)
-        
-        for idx, file in enumerate(self.connection_files):
-            self.status_var.set(f"Processando arquivo {idx+1}/{total_files}: {os.path.basename(file)}")
-            self.root.update()
+            # Log final de memória
+            log_memory_usage("Final do processamento")
+            
+            
+    
+        def process_single_file(self, conexoes_file, config, include_orphans, layouts_choice, 
+                                regionalization, elementos_file, localidades_file, 
+                                hide_node_names, hide_connection_layers, ignore_optional,
+                                filter_string=None):
+            """Processa um arquivo de conexões completo"""
+            file_start = time.perf_counter()
+            logger.info("⏱️ [INICIO] Processando arquivo: %s", conexoes_file)
+            logger.debug("Parâmetros: orphans=%s, layouts=%s, regional=%s, hide_names=%s, hide_cnx=%s",
+                        include_orphans, layouts_choice, regionalization, 
+                        hide_node_names, hide_connection_layers)
             
             try:
-                # CORREÇÃO: Passar os parâmetros na ordem correta
-                result = self.process_single_file(
-                    file, 
-                    config, 
-                    self.include_orphans.get(), 
-                    layouts, 
-                    self.regionalization.get(),
-                    self.elementos_file,
-                    self.localidades_file,
-                    hide_node_names,          # Corrigido
-                    hide_connection_layers,    # Corrigido
-                    ignore_optional=self.ignore_optional.get(),
-                    filter_string=filter_str
+                # Criar instância do gerador com arquivos personalizados
+                generator = TopologyGenerator(
+                    elementos_file=elementos_file, 
+                    conexoes_file=conexoes_file, 
+                    config=config, 
+                    include_orphans=include_orphans, 
+                    regionalization=regionalization,
+                    localidades_file=localidades_file,
+                    hide_node_names=hide_node_names,
+                    hide_connection_layers=hide_connection_layers,
+                    ignore_optional=ignore_optional,
+                    filter_string=filter_string
                 )
-                if not result:
-                    success = False
-                    self.status_var.set(f"Erro ao processar: {os.path.basename(file)}")
+                
+                if not generator.valid:
+                    return False
+                    
+                if not generator.read_elementos():
+                    return False
+                    
+                if not generator.read_conexoes():
+                    return False
+                    
+                base_name = os.path.splitext(conexoes_file)[0]
+                timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+                
+                success = True
+                
+                # Dicionário de mapeamento de layouts
+                layout_map = {
+                    'c': ('circular', 'Circular'),
+                    'o': ('organico', 'Orgânico'),
+                    'g': ('geografico', 'Geográfico'),
+                    'h': ('hierarquico', 'Hierárquico')
+                }
+                
+                generated_layouts = []
+                
+                # Gerar layouts selecionados
+                for char in layouts_choice:
+                    if char in layout_map:
+                        layout_key, layout_name = layout_map[char]
+                        
+                        # Verificar disponibilidade do geográfico
+                        if char == 'g' and not generator.has_geographic_data:
+                            logger.warning("Layout geográfico solicitado mas sem dados geográficos. Ignorando.")
+                            continue
+                        
+                        layout_start = time.perf_counter()
+                        output_file = f"{base_name}_{timestamp}_{layout_key}.drawio"
+                        if generator.generate_drawio(output_file, layout_key):
+                            gen_time = time.perf_counter() - layout_start
+                            logger.info("✅ %s gerado em %.2fs (%.1fKB)", 
+                                      layout_name, gen_time, os.path.getsize(output_file)/1024)
+                            generated_layouts.append(layout_name)
+                        else:
+                            success = False
+                
+                # Log de performance detalhada
+                file_time = time.perf_counter() - file_start
+                logger.info("✅ [SUCESSO] Arquivo processado em %.2fs | Layouts: %s | Nós: %d | Conexões: %d",
+                          file_time, ', '.join(generated_layouts), 
+                          len(generator.nodes), len(generator.connections))
+                
+                # Registrar elementos sem siteid
+                if generator.nodes_without_siteid:
+                    nodes_list = ", ".join(generator.nodes_without_siteid[:10])
+                    if len(generator.nodes_without_siteid) > 10:
+                        nodes_list += f", ... (+{len(generator.nodes_without_siteid) - 10} mais)"
+                    logger.debug("%d elementos sem siteid movidos para camada especial: %s", 
+                                  len(generator.nodes_without_siteid), nodes_list)        
+                
+                return success
             except Exception as e:
-                logger.error(f"Erro ao processar {file}: {str(e)}", exc_info=True)
-                success = False
-                self.status_var.set(f"Erro grave em: {os.path.basename(file)}")
-        
-        if success:
-            messagebox.showinfo("Sucesso", "Todas as topologias foram geradas com sucesso!")
-            self.status_var.set("Processamento concluído com sucesso")
-        else:
-            messagebox.showwarning("Aviso", "Algumas topologias podem não ter sido geradas corretamente. Verifique os logs.")
-            self.status_var.set("Processamento concluído com erros")
-            
-        # Log final de memória
-        log_memory_usage("Final do processamento")
-        
-        
-
-    def process_single_file(self, conexoes_file, config, include_orphans, layouts_choice, 
-                            regionalization, elementos_file, localidades_file, 
-                            hide_node_names, hide_connection_layers, ignore_optional,
-                            filter_string=None):
-        """Processa um arquivo de conexões completo"""
-        file_start = time.perf_counter()
-        logger.info("⏱️ [INICIO] Processando arquivo: %s", conexoes_file)
-        logger.debug("Parâmetros: orphans=%s, layouts=%s, regional=%s, hide_names=%s, hide_cnx=%s",
-                    include_orphans, layouts_choice, regionalization, 
-                    hide_node_names, hide_connection_layers)
-        
-        try:
-            # Criar instância do gerador com arquivos personalizados
-            generator = TopologyGenerator(
-                elementos_file=elementos_file, 
-                conexoes_file=conexoes_file, 
-                config=config, 
-                include_orphans=include_orphans, 
-                regionalization=regionalization,
-                localidades_file=localidades_file,
-                hide_node_names=hide_node_names,
-                hide_connection_layers=hide_connection_layers,
-                ignore_optional=ignore_optional,
-                filter_string=filter_string
-            )
-            
-            if not generator.valid:
+                logger.exception("💥 [FALHA] Erro no processamento")
+                logger.error("Contexto: layouts=%s, regional=%s, elementos=%s",
+                           layouts_choice, regionalization, elementos_file)
                 return False
-                
-            if not generator.read_elementos():
-                return False
-                
-            if not generator.read_conexoes():
-                return False
-                
-            base_name = os.path.splitext(conexoes_file)[0]
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            
-            success = True
-            
-            # Dicionário de mapeamento de layouts
-            layout_map = {
-                'c': ('circular', 'Circular'),
-                'o': ('organico', 'Orgânico'),
-                'g': ('geografico', 'Geográfico'),
-                'h': ('hierarquico', 'Hierárquico')
-            }
-            
-            generated_layouts = []
-            
-            # Gerar layouts selecionados
-            for char in layouts_choice:
-                if char in layout_map:
-                    layout_key, layout_name = layout_map[char]
-                    
-                    # Verificar disponibilidade do geográfico
-                    if char == 'g' and not generator.has_geographic_data:
-                        logger.warning("Layout geográfico solicitado mas sem dados geográficos. Ignorando.")
-                        continue
-                    
-                    layout_start = time.perf_counter()
-                    output_file = f"{base_name}_{timestamp}_{layout_key}.drawio"
-                    if generator.generate_drawio(output_file, layout_key):
-                        gen_time = time.perf_counter() - layout_start
-                        logger.info("✅ %s gerado em %.2fs (%.1fKB)", 
-                                  layout_name, gen_time, os.path.getsize(output_file)/1024)
-                        generated_layouts.append(layout_name)
-                    else:
-                        success = False
-            
-            # Log de performance detalhada
-            file_time = time.perf_counter() - file_start
-            logger.info("✅ [SUCESSO] Arquivo processado em %.2fs | Layouts: %s | Nós: %d | Conexões: %d",
-                      file_time, ', '.join(generated_layouts), 
-                      len(generator.nodes), len(generator.connections))
-            
-            # Registrar elementos sem siteid
-            if generator.nodes_without_siteid:
-                nodes_list = ", ".join(generator.nodes_without_siteid[:10])
-                if len(generator.nodes_without_siteid) > 10:
-                    nodes_list += f", ... (+{len(generator.nodes_without_siteid) - 10} mais)"
-                logger.debug("%d elementos sem siteid movidos para camada especial: %s", 
-                              len(generator.nodes_without_siteid), nodes_list)        
-            
-            return success
-        except Exception as e:
-            logger.exception("💥 [FALHA] Erro no processamento")
-            logger.error("Contexto: layouts=%s, regional=%s, elementos=%s",
-                       layouts_choice, regionalization, elementos_file)
-            return False
-
+    # Código que inicializa a GUI
+    root = tk.Tk()
+    app = TopologyGUI(root)
+    root.mainloop()
+    
 # =====================================================
 # CORE FUNCTIONALITY
 # =====================================================
@@ -2691,15 +2705,6 @@ class TopologyGenerator:
             logger.info(f"Página '{page_def['name']}' está vazia e será omitida.")
             return None               
         return '\n'.join(page_content)
-
-# =====================================================
-# MAIN FUNCTION WITH CLI/GUI SWITCH
-# =====================================================
-
-def run_gui():
-    root = tk.Tk()
-    app = TopologyGUI(root)
-    root.mainloop()
 
 def process_file(conexoes_file, config, include_orphans=False, layouts_choice="cog", 
                 regionalization=False, elementos_file='elementos.csv', 
