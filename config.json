@@ -146,14 +146,14 @@
         "default": {"color": "#000000", "strokeWidth": "1"}
     },
     "CONNECTION_STYLE_BASE": {
-        "endArrow": "none",
+        "endArrow": "classic",
         "html": "1",
         "rounded": "0",
         "dashed": "0",
         "fontStyle": "1",
         "fontSize": "16",
         "labelBackgroundColor": "white",
-	"curved": "1"
+		"curved": "1"
     },
     "PAGE_DEFINITIONS": [
         {"name": "GERAL", "visible_layers": null},
@@ -195,7 +195,7 @@
         "min_distance": 100,
         "min_node_distance": 100,
         "background_image": {
-            "url": "https://educa.ibge.gov.br/images/7a12/vamos_conhecer/brasil_regioes_ufs_animacao.gif",
+            "url": "https://upload.wikimedia.org/wikipedia/commons/1/10/Brazil_Blank_Map.svg",
             "x": 0,
             "y": 0,
             "width": 6000,
@@ -219,3 +219,4 @@
         "margin": 50
     }
 }
+
