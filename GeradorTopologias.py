@@ -23,7 +23,7 @@ from collections import defaultdict
 import platform
 import glob
 
-versionctr = "B1.30"
+versionctr = "B1.31"
 
 # Tente importar psutil para monitoramento de memória, mas não é obrigatório
 PSUTIL_AVAILABLE = False
@@ -2480,11 +2480,12 @@ class TopologyGenerator:
         
         # 1. Contar quantas conexões existem entre cada par de nós
         connection_counts = defaultdict(int)
-        # Usamos frozenset para tratar a conexão A->B da mesma forma que B->A
+        connection_directions = {}  # Rastrear direções únicas
+
         for conn in self.connections:
-            if (conn['origem'] in generated_nodes and conn['destino'] in generated_nodes):
-                key = frozenset([conn['origem'], conn['destino']])
-                connection_counts[key] += 1
+            key = (conn['origem'], conn['destino'])  # Tupla DIRECIONAL
+            connection_counts[key] += 1
+            connection_directions[key] = (conn['origem'], conn['destino'])
         # 2. Manter o controle do índice da conexão atual que estamos desenhando
         connection_indices = defaultdict(int)
         
@@ -2510,7 +2511,7 @@ class TopologyGenerator:
             geometry_xml = '<mxGeometry relative="1" as="geometry"/>'
 
             # Chave para este par de conexões
-            key = frozenset([origem_node, destino_node])
+            key = (origem_node, destino_node)  # Usar tupla direcional
             total_conns = connection_counts[key]
             
             if total_conns > 1:
@@ -2535,14 +2536,20 @@ class TopologyGenerator:
                 # offset ficará proporcional a -1, 0, 1.
                 offset_magnitude = spacing_factor * (conn_index - (total_conns - 1) / 2.0)
 
-                # Calcular o ponto de controle deslocado perpendicularmente
-                if length > 0:
-                    # Vetor perpendicular normalizado: (-dy/length, dx/length)
-                    point_x = mid_x - (dy / length) * offset_magnitude
-                    point_y = mid_y + (dx / length) * offset_magnitude
-                else: # Caso de nós sobrepostos
-                    point_x = mid_x + offset_magnitude
-                    point_y = mid_y
+                # Usar direção real da conexão (origem->destino)
+                x1_ref, y1_ref = positions[origem_node]
+                x2_ref, y2_ref = positions[destino_node]
+                dx_ref = x2_ref - x1_ref
+                dy_ref = y2_ref - y1_ref
+                length_ref = math.sqrt(dx_ref**2 + dy_ref**2) or 1.0
+
+                # Vetor perpendicular unitário (giro de 90°)
+                perp_x = -dy_ref / length_ref
+                perp_y = dx_ref / length_ref
+
+                # Calcular ponto de controle
+                point_x = mid_x + perp_x * offset_magnitude
+                point_y = mid_y + perp_y * offset_magnitude
 
                 # Forçar estilo curvo e criar a nova geometria com o ponto de controle
                 style += ";curved=1"
